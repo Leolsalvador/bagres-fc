@@ -70,18 +70,26 @@ export function RodadaProvider({ children }) {
         await updateRodadaStatus(rodada.id, status)
       }
       if (status === 'aberta') {
-        // Insere todos os admins na lista automaticamente (posições 1, 2, ...)
+        // Insere admins na lista — ignora se já estiverem (unique constraint)
         const admins = await fetchAdminProfiles()
         const adminPresencas = []
         for (let i = 0; i < admins.length; i++) {
-          const p = await insertPresenca(rodada.id, admins[i].id, i + 1, 'confirmado')
-          adminPresencas.push(p)
+          try {
+            const p = await insertPresenca(rodada.id, admins[i].id, i + 1, 'confirmado')
+            adminPresencas.push(p)
+          } catch {
+            // admin já está na lista, ignora
+          }
         }
-        setPresencas(adminPresencas)
-        sendPushNotification({ title: '⚽ Lista aberta!', body: 'A lista da rodada está aberta. Confirme sua presença!' }).catch(() => {})
+        if (adminPresencas.length > 0) setPresencas(adminPresencas)
       }
     } catch (err) {
       console.error('Erro ao atualizar status:', err)
+    }
+
+    // Notificação fora do try/catch — dispara independente de erros anteriores
+    if (status === 'aberta') {
+      sendPushNotification({ title: '⚽ Lista aberta!', body: 'A lista da rodada está aberta. Confirme sua presença!' })
     }
   }
 

@@ -18,9 +18,11 @@ export async function sendPushNotification({ title, body, userIds }) {
     }
     return
   }
-  await supabase.functions.invoke('send-push', {
+  const { data, error } = await supabase.functions.invoke('send-push', {
     body: { title, body, userIds },
   })
+  if (error) console.error('sendPushNotification error:', error)
+  else console.log('sendPushNotification result:', data)
 }
 
 // ─── HELPERS ────────────────────────────────────────────────
