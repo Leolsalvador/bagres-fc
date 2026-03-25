@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Star, Vote } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { useVotacao } from '@/context/VotacaoContext'
 import { fetchApprovedProfiles, saveVoto, fetchMyVotos } from '@/lib/api'
+import { supabase } from '@/lib/supabase'
 
 export default function Votacao() {
   const { profile } = useAuth()
@@ -19,27 +20,46 @@ export default function Votacao() {
   const [loadingVotos, setLoadingVotos] = useState(false)
 
   // Busca jogadores aprovados e votos já dados neste ciclo
+  const loadVotos = useCallback(async (currentVotos) => {
+    if (!votacaoAberta || !profile?.id) return
+    const all = await fetchApprovedProfiles()
+    const others = all.filter(p => p.id !== profile.id)
+    setPlayers(others)
+    if (!ciclo?.id) return
+    // Usa votos já em memória se passados (evita re-fetch desnecessário)
+    const votoMap = currentVotos ?? (() => {
+      const m = {}
+      return m
+    })()
+    if (!currentVotos) {
+      const existingVotos = await fetchMyVotos(ciclo.id, profile.id)
+      existingVotos.forEach(v => { votoMap[v.avaliado_id] = v.nota })
+      setVotos(votoMap)
+    }
+    // Avança o index para o primeiro jogador ainda não votado
+    const firstPending = others.findIndex(p => !votoMap[p.id])
+    setIndex(firstPending === -1 ? others.length : firstPending)
+  }, [votacaoAberta, profile?.id, ciclo?.id])
+
+  useEffect(() => {
+    setLoadingVotos(true)
+    loadVotos(null).catch(console.error).finally(() => setLoadingVotos(false))
+  }, [loadVotos])
+
+  // Realtime: detecta novo jogador aprovado e atualiza lista automaticamente
   useEffect(() => {
     if (!votacaoAberta || !profile?.id) return
-    setLoadingVotos(true)
-    fetchApprovedProfiles()
-      .then(all => {
-        const others = all.filter(p => p.id !== profile.id)
-        setPlayers(others)
-        if (ciclo?.id) {
-          return fetchMyVotos(ciclo.id, profile.id).then(existingVotos => {
-            const votoMap = {}
-            existingVotos.forEach(v => { votoMap[v.avaliado_id] = v.nota })
-            setVotos(votoMap)
-            // Avança o index para o primeiro jogador ainda não votado
-            const firstPending = others.findIndex(p => !votoMap[p.id])
-            setIndex(firstPending === -1 ? others.length : firstPending)
-          })
-        }
+    const channel = supabase
+      .channel('votacao-profiles')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, () => {
+        setVotos(currentVotos => {
+          loadVotos(currentVotos).catch(console.error)
+          return currentVotos
+        })
       })
-      .catch(console.error)
-      .finally(() => setLoadingVotos(false))
-  }, [votacaoAberta, profile?.id, ciclo?.id])
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [votacaoAberta, profile?.id, loadVotos])
 
   const done = index >= players.length
   const current = players[index]
