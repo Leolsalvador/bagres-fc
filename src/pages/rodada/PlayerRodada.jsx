@@ -5,7 +5,7 @@ import TeamsGrid from './TeamsGrid'
 import { CalendarDays, Trophy } from 'lucide-react'
 
 export default function PlayerRodada() {
-  const { rodada, presencas, teams, matchHistory, joinList, leaveList, confirmPayment } = useRodada()
+  const { rodada, presencas, teams, matchHistory, loading, joinList, leaveList, confirmPayment } = useRodada()
   const { profile } = useAuth()
   const userId = profile?.id
 
@@ -17,11 +17,20 @@ export default function PlayerRodada() {
   const isOnQueue  = myPresenca && myPresenca.posicao > 20
   const queuePos   = isOnQueue ? fila.findIndex(p => p.usuario_id === userId) + 1 : null
 
+  if (loading) {
+    return (
+      <div className="min-h-full bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
   if (!rodada) {
     return (
       <div className="min-h-full bg-background flex flex-col items-center justify-center py-20 px-4 text-center">
         <CalendarDays size={40} className="text-text-muted mb-4" />
-        <p className="text-text-muted text-sm">Nenhuma rodada disponível no momento.</p>
+        <p className="text-text-main font-semibold">Nenhuma rodada por aqui</p>
+        <p className="text-text-muted text-sm mt-2 max-w-xs">O administrador ainda não criou a rodada desta semana.</p>
       </div>
     )
   }

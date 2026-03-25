@@ -26,7 +26,7 @@ const STATUS_COLOR = {
 
 export default function AdminRodada() {
   const {
-    rodada, presencas, teams, matchHistory,
+    rodada, presencas, teams, matchHistory, loading,
     setStatus, closeList, setTeams, setMatchHistory,
     validatePayment, rejectPayment, removeFromList,
     joinList, leaveList,
@@ -84,7 +84,15 @@ export default function AdminRodada() {
     }
   }
 
-if (!rodada) {
+  if (loading) {
+    return (
+      <div className="min-h-full bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (!rodada) {
     return (
       <div className="min-h-full bg-background flex flex-col items-center justify-center py-20 px-4 text-center">
         <h1 className="text-2xl font-black text-text-main uppercase tracking-widest mb-6">Rodada</h1>
