@@ -1,8 +1,12 @@
-import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
+import { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } from 'workbox-precaching'
+import { NavigationRoute, registerRoute } from 'workbox-routing'
 
 // Precache de todos os assets (injetado pelo vite-plugin-pwa)
 precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
+
+// Serve index.html para todas as rotas de navegação (SPA)
+registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html')))
 
 // Permite que o botão "Atualizar" ative o novo SW imediatamente
 self.addEventListener('message', (event) => {
