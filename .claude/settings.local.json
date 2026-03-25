@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(\"C:/Users/User/Documents/Codes/Bagres FC/.env\":*)",
+      "Bash(npx vercel:*)",
+      "Bash(ls -la .env*)"
+    ]
+  }
+}
