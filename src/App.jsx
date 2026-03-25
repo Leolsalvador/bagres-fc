@@ -4,6 +4,7 @@ import { RodadaProvider } from '@/context/RodadaContext'
 import { VotacaoProvider } from '@/context/VotacaoContext'
 import { ProtectedRoute, AdminRoute } from '@/routes/ProtectedRoute'
 import Layout from '@/components/layout/Layout'
+import InstallPWA from '@/components/InstallPWA'
 
 import Login from '@/pages/auth/Login'
 import PendingApproval from '@/pages/PendingApproval'
@@ -16,6 +17,7 @@ import Usuarios from '@/pages/admin/Usuarios'
 export default function App() {
   return (
     <BrowserRouter>
+      <InstallPWA />
       <AuthProvider>
       <RodadaProvider>
       <VotacaoProvider>
