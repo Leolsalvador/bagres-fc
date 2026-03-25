@@ -89,7 +89,7 @@ export default function Votacao() {
         <div className="px-4 pt-10 pb-4">
           <h1 className="text-2xl font-black text-text-main uppercase tracking-widest">Votação</h1>
           <p className="text-text-muted text-sm mt-0.5">Avalie seus colegas</p>
-          {isAdmin && <AdminVoteToggle aberta={votacaoAberta} onToggle={() => setVotacaoAberta(v => !v)} />}
+          {isAdmin && <AdminVoteToggle aberta={votacaoAberta} onToggle={() => setVotacaoAberta(!votacaoAberta)} />}
         </div>
         <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
           <div className="w-20 h-20 rounded-full bg-card flex items-center justify-center mb-4">
@@ -109,7 +109,7 @@ export default function Votacao() {
       <div className="min-h-full bg-background">
         <div className="px-4 pt-10 pb-4">
           <h1 className="text-2xl font-black text-text-main uppercase tracking-widest">Votação</h1>
-          {isAdmin && <AdminVoteToggle aberta={votacaoAberta} onToggle={() => setVotacaoAberta(v => !v)} />}
+          {isAdmin && <AdminVoteToggle aberta={votacaoAberta} onToggle={() => setVotacaoAberta(!votacaoAberta)} />}
         </div>
         <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
           <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mb-4">
@@ -147,7 +147,7 @@ export default function Votacao() {
         <p className="text-text-muted text-sm mt-0.5">
           {index + 1} de {players.length} jogadores
         </p>
-        {isAdmin && <AdminVoteToggle aberta={votacaoAberta} onToggle={() => setVotacaoAberta(v => !v)} />}
+        {isAdmin && <AdminVoteToggle aberta={votacaoAberta} onToggle={() => setVotacaoAberta(!votacaoAberta)} />}
       </div>
 
       {/* Barra de progresso */}
