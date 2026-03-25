@@ -1,11 +1,14 @@
 import { useState } from 'react'
-import { Check, X, Trash2, Shuffle, Play, LogIn, XCircle } from 'lucide-react'
+import { Check, X, Trash2, Shuffle, Play, LogIn, XCircle, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useRodada } from '@/context/RodadaContext'
 import { useAuth } from '@/hooks/useAuth'
+import { USE_MOCK } from '@/lib/mockData'
 import TeamsGrid from './TeamsGrid'
 import MatchSelector from './MatchSelector'
 import MatchScreen from './MatchScreen'
+
+const DEV_STATES = ['aguardando', 'aberta', 'sorteada', 'em_jogo', 'encerrada']
 
 const STATUS_LABEL = {
   aguardando: 'Aguardando abertura',
@@ -118,6 +121,18 @@ export default function AdminRodada() {
           </span>
         </div>
 
+        {USE_MOCK && (
+          <button
+            onClick={() => {
+              const idx = DEV_STATES.indexOf(rodada.status)
+              const next = DEV_STATES[(idx + 1) % DEV_STATES.length]
+              setStatus(next)
+            }}
+            className="flex items-center gap-1 bg-secondary/20 text-secondary text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-transform"
+          >
+            [DEV] <ChevronRight size={12} />
+          </button>
+        )}
       </div>
 
       {/* ── AGUARDANDO ── */}
