@@ -2,7 +2,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import webpush from 'npm:web-push@3.6.7'
 
-const VAPID_PUBLIC_KEY = 'BKmvbEHOT6DQ-_BYQtGC8OSQb0QOCxlt1Qq3gOU4B0vvw3dCB7HBla1YlKQSn36VQLnaJOcJUKEAjMW5x6ZiDSw'
+const VAPID_PUBLIC_KEY = 'BJXT7wnqdAJaw2N_lj9fvkk_ADF4XHYw27VYk5AFPAST7jueQVnVals7LIA-VsJ5ctV_gpUBN1_DWy-T5Z40AqA'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
