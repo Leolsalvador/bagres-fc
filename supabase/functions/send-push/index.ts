@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import webpush from 'npm:web-push@3.6.7'
 
 const VAPID_PUBLIC_KEY  = 'BKmvbEHOT6DQ-_BYQtGC8OSQb0QOCxlt1Qq3gOU4B0vvw3dCB7HBla1YlKQSn36VQLnaJOcJUKEAjMW5x6ZiDSw'
-const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY')!
+const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY')!.trim()
 
 webpush.setVapidDetails('mailto:admin@bagresfc.app', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
 
