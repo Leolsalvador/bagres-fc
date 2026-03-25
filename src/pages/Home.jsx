@@ -158,8 +158,8 @@ function RodadaCard({ rodada: r }) {
         <div className="text-left">
           <p className="text-text-muted text-xs">{dateLabel}</p>
           <p className="text-text-main font-bold text-sm mt-0.5">
-            🏆 {r.timeDaRodada.nome}
-            <span className="text-text-muted font-normal"> — Time da Rodada</span>
+            {r.timeDaRodada ? `🏆 ${r.timeDaRodada.nome}` : `⚽ ${r.partidas.length} partida${r.partidas.length !== 1 ? 's' : ''}`}
+            <span className="text-text-muted font-normal"> — {r.timeDaRodada ? 'Time da Rodada' : 'encerrada'}</span>
           </p>
         </div>
         {open ? <ChevronUp size={16} className="text-text-muted shrink-0" /> : <ChevronDown size={16} className="text-text-muted shrink-0" />}
@@ -168,18 +168,24 @@ function RodadaCard({ rodada: r }) {
       {open && (
         <div className="px-4 pb-4 space-y-3 border-t border-border">
           {/* Destaques */}
-          <div className="grid grid-cols-2 gap-2 pt-3">
-            <div className="bg-elevated rounded-xl p-3">
-              <p className="text-text-muted text-[10px] font-semibold uppercase">Artilheiro ⚽</p>
-              <p className="text-primary font-bold text-sm mt-1 truncate">{r.artilheiro.nome}</p>
-              <p className="text-text-muted text-xs">{r.artilheiro.gols} gols</p>
+          {(r.artilheiro || r.garcom) && (
+            <div className="grid grid-cols-2 gap-2 pt-3">
+              {r.artilheiro && (
+                <div className="bg-elevated rounded-xl p-3">
+                  <p className="text-text-muted text-[10px] font-semibold uppercase">Artilheiro ⚽</p>
+                  <p className="text-primary font-bold text-sm mt-1 truncate">{r.artilheiro.nome}</p>
+                  <p className="text-text-muted text-xs">{r.artilheiro.gols} gols</p>
+                </div>
+              )}
+              {r.garcom && (
+                <div className="bg-elevated rounded-xl p-3">
+                  <p className="text-text-muted text-[10px] font-semibold uppercase">Garçom 🅰️</p>
+                  <p className="text-secondary font-bold text-sm mt-1 truncate">{r.garcom.nome}</p>
+                  <p className="text-text-muted text-xs">{r.garcom.assistencias} assist.</p>
+                </div>
+              )}
             </div>
-            <div className="bg-elevated rounded-xl p-3">
-              <p className="text-text-muted text-[10px] font-semibold uppercase">Garçom 🅰️</p>
-              <p className="text-secondary font-bold text-sm mt-1 truncate">{r.garcom.nome}</p>
-              <p className="text-text-muted text-xs">{r.garcom.assistencias} assist.</p>
-            </div>
-          </div>
+          )}
 
           {/* Partidas */}
           <p className="text-text-muted text-[10px] font-semibold uppercase tracking-wider">Partidas</p>
