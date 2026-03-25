@@ -1,5 +1,6 @@
 import { createContext, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { USE_MOCK, mockCurrentUser } from '@/lib/mockData'
 
 export const AuthContext = createContext(null)
 
@@ -19,6 +20,13 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
+    if (USE_MOCK) {
+      setUser({ id: mockCurrentUser.id })
+      setProfile(mockCurrentUser)
+      setLoading(false)
+      return
+    }
+
     let realtimeChannel = null
 
     supabase.auth.getSession().then(({ data: { session } }) => {

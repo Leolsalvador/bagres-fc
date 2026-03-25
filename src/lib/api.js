@@ -1,8 +1,23 @@
 // src/lib/api.js — Todas as queries do Supabase
 import { supabase } from './supabase'
+import {
+  USE_MOCK,
+  mockPlayers, mockRodada, mockPresencas,
+  mockRodadasHistory, mockCiclo,
+} from './mockData'
 
 // ─── PUSH NOTIFICATIONS ─────────────────────────────────────
 export async function sendPushNotification({ title, body, userIds }) {
+  if (USE_MOCK) {
+    if (Notification.permission === 'granted') {
+      new Notification(title, { body, icon: '/icons/icon-192.png' })
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission().then(perm => {
+        if (perm === 'granted') new Notification(title, { body, icon: '/icons/icon-192.png' })
+      })
+    }
+    return
+  }
   await supabase.functions.invoke('send-push', {
     body: { title, body, userIds },
   })
@@ -40,6 +55,7 @@ export async function uploadAvatar(userId, file) {
 }
 
 export async function fetchApprovedProfiles() {
+  if (USE_MOCK) return mockPlayers.filter(p => p.status === 'aprovado')
   const { data, error } = await supabase
     .from('profiles')
     .select(PROFILE_FIELDS)
@@ -51,6 +67,7 @@ export async function fetchApprovedProfiles() {
 
 // ─── RODADA ─────────────────────────────────────────────────
 export async function fetchLatestRodada() {
+  if (USE_MOCK) return mockRodada
   const { data, error } = await supabase
     .from('rodadas')
     .select('*')
@@ -62,6 +79,7 @@ export async function fetchLatestRodada() {
 }
 
 export async function createRodada() {
+  if (USE_MOCK) return { ...mockRodada, status: 'aguardando', id: 'mock-rodada-' + Date.now() }
   const { data, error } = await supabase
     .from('rodadas')
     .insert({ data_jogo: nextMonday(), status: 'aguardando' })
@@ -72,6 +90,7 @@ export async function createRodada() {
 }
 
 export async function updateRodadaStatus(rodadaId, status, extra = {}) {
+  if (USE_MOCK) return
   const { error } = await supabase
     .from('rodadas')
     .update({ status, ...extra })
@@ -81,6 +100,7 @@ export async function updateRodadaStatus(rodadaId, status, extra = {}) {
 
 // ─── PRESENÇAS ──────────────────────────────────────────────
 export async function fetchPresencas(rodadaId) {
+  if (USE_MOCK) return mockPresencas
   const { data, error } = await supabase
     .from('presencas')
     .select(`*, profiles(${PROFILE_FIELDS})`)
@@ -133,6 +153,7 @@ export async function saveDrawToDb(rodadaId, teams) {
 }
 
 export async function fetchTeams(rodadaId) {
+  if (USE_MOCK) return null
   const { data, error } = await supabase
     .from('times')
     .select(`id, numero, nome, time_jogadores(profiles(${PROFILE_FIELDS}))`)
@@ -206,6 +227,7 @@ export async function savePartida(rodadaId, teams, result) {
 }
 
 export async function fetchMatchHistory(rodadaId) {
+  if (USE_MOCK) return []
   const { data, error } = await supabase
     .from('partidas')
     .select(`
@@ -236,6 +258,7 @@ export async function fetchMatchHistory(rodadaId) {
 
 // ─── FINALIZAÇÃO DA RODADA ──────────────────────────────────
 export async function finalizeRodada(rodadaId, matchHistory, presencas) {
+  if (USE_MOCK) return
   // Computa artilheiro e garçom
   const allEvents = matchHistory.flatMap(m => m.events ?? [])
   const goalMap = {}, assistMap = {}
@@ -269,6 +292,7 @@ export async function finalizeRodada(rodadaId, matchHistory, presencas) {
 
 // ─── VOTAÇÃO ────────────────────────────────────────────────
 export async function fetchLatestCiclo() {
+  if (USE_MOCK) return mockCiclo
   const { data, error } = await supabase
     .from('ciclos_votacao')
     .select('*')
@@ -307,6 +331,7 @@ export async function saveVoto(cicloId, votanteId, avaliadoId, nota) {
 }
 
 export async function fetchMyVotos(cicloId, votanteId) {
+  if (USE_MOCK) return []
   const { data, error } = await supabase
     .from('votos')
     .select('avaliado_id, nota')
@@ -318,6 +343,7 @@ export async function fetchMyVotos(cicloId, votanteId) {
 
 // ─── HISTÓRICO DE RODADAS (Home) ────────────────────────────
 export async function fetchRodadasEncerradas() {
+  if (USE_MOCK) return mockRodadasHistory
   const { data, error } = await supabase
     .from('rodadas')
     .select(`

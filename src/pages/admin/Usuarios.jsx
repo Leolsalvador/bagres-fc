@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { USE_MOCK, mockAllProfiles } from '@/lib/mockData'
 import { ShieldCheck, User, Trash2, Check, X, Plus, Crown, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -19,6 +20,11 @@ export default function Usuarios() {
 
   async function fetchAll() {
     setLoading(true)
+    if (USE_MOCK) {
+      setProfiles(mockAllProfiles)
+      setLoading(false)
+      return
+    }
     const { data } = await supabase.from('profiles').select('*').order('created_at')
     setProfiles(data ?? [])
     setLoading(false)

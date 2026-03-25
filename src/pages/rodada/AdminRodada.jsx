@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, X, Trash2, Shuffle, ChevronRight, Play } from 'lucide-react'
+import { Check, X, Trash2, Shuffle, Play } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useRodada } from '@/context/RodadaContext'
 import TeamsGrid from './TeamsGrid'
@@ -22,8 +22,6 @@ const STATUS_COLOR = {
   encerrada:  'bg-border       text-text-muted',
 }
 
-// Ordem de estados para o botão de dev
-const DEV_STATES = ['aguardando', 'aberta', 'sorteada', 'em_jogo', 'encerrada']
 
 export default function AdminRodada() {
   const {
@@ -83,18 +81,7 @@ export default function AdminRodada() {
     }
   }
 
-  function devNextState() {
-    const idx = DEV_STATES.indexOf(rodada.status)
-    const next = DEV_STATES[(idx + 1) % DEV_STATES.length]
-    setStatus(next)
-    if (next !== 'sorteada' && next !== 'em_jogo') {
-      setTeams(null)
-      setWaitingQueue([0, 1, 2, 3])
-      setOnFieldWinner(null)
-    }
-  }
-
-  if (!rodada) {
+if (!rodada) {
     return (
       <div className="min-h-full bg-background flex flex-col items-center justify-center py-20 px-4 text-center">
         <h1 className="text-2xl font-black text-text-main uppercase tracking-widest mb-6">Rodada</h1>
@@ -120,14 +107,6 @@ export default function AdminRodada() {
           </span>
         </div>
 
-        {/* DEV: Controle de estado */}
-        <button
-          onClick={devNextState}
-          className="mt-2 w-full border border-dashed border-border rounded-xl py-2 text-text-muted text-xs flex items-center justify-center gap-2"
-        >
-          <ChevronRight size={12} />
-          [DEV] Próximo estado: {DEV_STATES[(DEV_STATES.indexOf(rodada.status) + 1) % DEV_STATES.length]}
-        </button>
       </div>
 
       {/* ── AGUARDANDO ── */}
