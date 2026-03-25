@@ -137,6 +137,12 @@ export async function deletePresenca(presencaId) {
   if (error) throw error
 }
 
+export async function deleteAllPresencas(rodadaId) {
+  if (USE_MOCK) return
+  const { error } = await supabase.from('presencas').delete().eq('rodada_id', rodadaId)
+  if (error) throw error
+}
+
 export async function updatePresenca(presencaId, fields) {
   const { error } = await supabase.from('presencas').update(fields).eq('id', presencaId)
   if (error) throw error

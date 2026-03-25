@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import {
   fetchLatestRodada, createRodada,
   fetchPresencas, insertPresenca, deletePresenca, updatePresenca,
-  updateRodadaStatus, finalizeRodada,
+  updateRodadaStatus, finalizeRodada, deleteAllPresencas,
   saveDrawToDb, fetchTeams,
   savePartida, fetchMatchHistory,
   sendPushNotification, fetchAdminProfiles,
@@ -82,6 +82,18 @@ export function RodadaProvider({ children }) {
       }
     } catch (err) {
       console.error('Erro ao atualizar status:', err)
+    }
+  }
+
+  async function closeList() {
+    if (!rodada) return
+    setRodada(r => ({ ...r, status: 'aguardando' }))
+    setPresencas([])
+    try {
+      await deleteAllPresencas(rodada.id)
+      await updateRodadaStatus(rodada.id, 'aguardando')
+    } catch (err) {
+      console.error('Erro ao fechar lista:', err)
     }
   }
 
@@ -210,7 +222,7 @@ export function RodadaProvider({ children }) {
     <RodadaContext.Provider value={{
       rodada, presencas, teams, matchHistory, loading,
       setTeams, setMatchHistory,
-      setStatus, createNovaRodada,
+      setStatus, closeList, createNovaRodada,
       joinList, leaveList, confirmPayment,
       validatePayment, rejectPayment, removeFromList,
       performDraw, addMatchResult,

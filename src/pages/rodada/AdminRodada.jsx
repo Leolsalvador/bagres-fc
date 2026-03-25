@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Check, X, Trash2, Shuffle, Play } from 'lucide-react'
+import { Check, X, Trash2, Shuffle, Play, LogIn, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useRodada } from '@/context/RodadaContext'
+import { useAuth } from '@/hooks/useAuth'
 import TeamsGrid from './TeamsGrid'
 import MatchSelector from './MatchSelector'
 import MatchScreen from './MatchScreen'
@@ -26,10 +27,12 @@ const STATUS_COLOR = {
 export default function AdminRodada() {
   const {
     rodada, presencas, teams, matchHistory,
-    setStatus, setTeams, setMatchHistory,
+    setStatus, closeList, setTeams, setMatchHistory,
     validatePayment, rejectPayment, removeFromList,
+    joinList, leaveList,
     performDraw, addMatchResult, createNovaRodada,
   } = useRodada()
+  const { profile } = useAuth()
 
   const [currentMatch, setCurrentMatch]   = useState(null)
   const [waitingQueue, setWaitingQueue]   = useState([0, 1, 2, 3])
@@ -127,6 +130,31 @@ if (!rodada) {
       {/* ── ABERTA ── */}
       {rodada.status === 'aberta' && (
         <div className="px-4 space-y-4 pb-6">
+          {/* Ações do admin */}
+          <div className="flex gap-3">
+            {!presencas.some(p => p.usuario_id === profile?.id) ? (
+              <button
+                onClick={() => joinList(profile.id, profile)}
+                className="flex-1 flex items-center justify-center gap-2 bg-primary text-black font-bold py-3 rounded-xl active:scale-95 transition-transform text-sm"
+              >
+                <LogIn size={15} /> Entrar na lista
+              </button>
+            ) : (
+              <button
+                onClick={() => leaveList(profile.id)}
+                className="flex-1 flex items-center justify-center gap-2 border border-border text-text-muted py-3 rounded-xl text-sm font-semibold active:scale-95 transition-transform"
+              >
+                <X size={15} /> Sair da lista
+              </button>
+            )}
+            <button
+              onClick={closeList}
+              className="flex-1 flex items-center justify-center gap-2 border border-danger/40 text-danger py-3 rounded-xl text-sm font-semibold active:scale-95 transition-transform"
+            >
+              <XCircle size={15} /> Fechar lista
+            </button>
+          </div>
+
           {/* Resumo */}
           <div className="bg-card rounded-2xl p-4 flex items-center justify-between">
             <div>
