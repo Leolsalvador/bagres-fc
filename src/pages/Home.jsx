@@ -99,10 +99,10 @@ export default function Home() {
 
 function PlayerCard({ player: p, rank, sortKey }) {
   const highlight = {
-    rating:       `⭐ ${p.rating.toFixed(1)}`,
-    gols:         `⚽ ${p.gols} gols`,
-    assistencias: `🅰️ ${p.assistencias} assist.`,
-    jogos:        `👟 ${p.jogos} jogos`,
+    rating:       `⭐ ${(p.rating ?? 0).toFixed(1)}`,
+    gols:         `⚽ ${p.gols ?? 0} gols`,
+    assistencias: `🅰️ ${p.assistencias ?? 0} assist.`,
+    jogos:        `👟 ${p.jogos ?? 0} jogos`,
   }
 
   return (
@@ -121,17 +121,17 @@ function PlayerCard({ player: p, rank, sortKey }) {
       <div className="flex-1 min-w-0">
         <p className="text-text-main font-semibold text-sm truncate">{p.nome}</p>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-text-muted text-xs">{p.gols}G</span>
+          <span className="text-text-muted text-xs">{p.gols ?? 0}G</span>
           <span className="text-text-muted text-[10px]">·</span>
-          <span className="text-text-muted text-xs">{p.assistencias}A</span>
+          <span className="text-text-muted text-xs">{p.assistencias ?? 0}A</span>
           <span className="text-text-muted text-[10px]">·</span>
-          <span className="text-text-muted text-xs">{p.jogos} jogos</span>
+          <span className="text-text-muted text-xs">{p.jogos ?? 0} jogos</span>
         </div>
       </div>
       <div className="shrink-0 text-right">
         <div className="flex items-center gap-1 justify-end">
           <Star size={12} className="text-secondary fill-secondary" />
-          <span className="text-text-main font-bold text-sm">{p.rating.toFixed(1)}</span>
+          <span className="text-text-main font-bold text-sm">{(p.rating ?? 0).toFixed(1)}</span>
         </div>
         <p className={cn('text-[10px] font-semibold mt-0.5', sortKey !== 'rating' ? 'text-primary' : 'text-text-muted')}>
           {sortKey !== 'rating' ? highlight[sortKey] : ''}
