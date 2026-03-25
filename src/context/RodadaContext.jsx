@@ -8,6 +8,8 @@ import {
   sendPushNotification,
 } from '@/lib/api'
 import { drawTeams } from '@/lib/teamDraw'
+import { supabase } from '@/lib/supabase'
+import { USE_MOCK } from '@/lib/mockData'
 
 const RodadaContext = createContext(null)
 
@@ -41,6 +43,21 @@ export function RodadaProvider({ children }) {
   }, [])
 
   useEffect(() => { refresh() }, [refresh])
+
+  // ── Realtime: sincroniza com outros clientes ──────────────
+  useEffect(() => {
+    if (USE_MOCK || !rodada?.id) return
+
+    const channel = supabase
+      .channel(`rodada-${rodada.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rodadas',  filter: `id=eq.${rodada.id}` },        () => refresh())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'presencas', filter: `rodada_id=eq.${rodada.id}` }, () => refresh())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'times',     filter: `rodada_id=eq.${rodada.id}` }, () => refresh())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'partidas',  filter: `rodada_id=eq.${rodada.id}` }, () => refresh())
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [rodada?.id, refresh])
 
   // ── Status da rodada ─────────────────────────────────────
   async function setStatus(status) {

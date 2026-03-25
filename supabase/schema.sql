@@ -209,6 +209,14 @@ create policy "Leitura de ciclos" on public.ciclos_votacao
 create policy "Admin gerencia ciclos" on public.ciclos_votacao
   for all using (exists (select 1 from public.profiles where id = auth.uid() and papel = 'admin'));
 
+-- ============================================================
+-- REALTIME: habilita sincronização em tempo real
+-- ============================================================
+alter publication supabase_realtime add table public.rodadas;
+alter publication supabase_realtime add table public.presencas;
+alter publication supabase_realtime add table public.times;
+alter publication supabase_realtime add table public.partidas;
+
 create policy "Usuário insere próprio voto" on public.votos
   for insert with check (auth.uid() = votante_id);
 create policy "Usuário lê próprio voto" on public.votos
