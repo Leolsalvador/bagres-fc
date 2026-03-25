@@ -290,7 +290,7 @@ function PlayerRow({ presenca, position, isQueue = false, onValidate, onReject, 
         {/* Avatar */}
         <div className="w-9 h-9 rounded-full bg-elevated flex items-center justify-center overflow-hidden shrink-0">
           {p?.foto_url
-            ? <img src={p.foto_url} alt={p.nome} className="w-full h-full object-cover" />
+            ? <img src={p.foto_url} alt={p.nome} className="w-full h-full object-contain" />
             : <span className="text-sm">👤</span>}
         </div>
 

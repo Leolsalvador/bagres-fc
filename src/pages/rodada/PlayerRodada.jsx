@@ -112,7 +112,7 @@ export default function PlayerRodada() {
               <span className="text-text-muted text-xs font-bold w-6 text-center shrink-0">{i + 1}</span>
               <div className="w-9 h-9 rounded-full bg-elevated flex items-center justify-center overflow-hidden shrink-0">
                 {p.profiles?.foto_url
-                  ? <img src={p.profiles.foto_url} alt={p.profiles.nome} className="w-full h-full object-cover" />
+                  ? <img src={p.profiles.foto_url} alt={p.profiles.nome} className="w-full h-full object-contain" />
                   : <span className="text-sm">👤</span>}
               </div>
               <p className={cn('text-sm font-semibold flex-1 truncate', p.usuario_id === userId ? 'text-primary' : 'text-text-main')}>

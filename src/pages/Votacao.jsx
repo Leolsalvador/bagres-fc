@@ -143,7 +143,7 @@ export default function Votacao() {
         {/* Avatar */}
         <div className="w-28 h-28 rounded-full bg-elevated flex items-center justify-center overflow-hidden mb-4 ring-2 ring-border">
           {current.foto_url
-            ? <img src={current.foto_url} alt={current.nome} className="w-full h-full object-cover" />
+            ? <img src={current.foto_url} alt={current.nome} className="w-full h-full object-contain" />
             : <span className="text-6xl">👤</span>}
         </div>
 

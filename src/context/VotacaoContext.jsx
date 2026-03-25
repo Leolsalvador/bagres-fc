@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { fetchLatestCiclo, createCiclo, updateCiclo } from '@/lib/api'
+import { fetchLatestCiclo, createCiclo, updateCiclo, sendPushNotification } from '@/lib/api'
 
 const VotacaoContext = createContext(null)
 
@@ -23,10 +23,12 @@ export function VotacaoProvider({ children }) {
         if (open) {
           const novo = await createCiclo()
           setCiclo(novo)
+          sendPushNotification({ title: '⭐ Votação aberta!', body: 'Avalie seus colegas de pelada!' }).catch(() => {})
         }
       } else {
         await updateCiclo(ciclo.id, open)
         setCiclo(c => ({ ...c, aberta: open }))
+        if (open) sendPushNotification({ title: '⭐ Votação aberta!', body: 'Avalie seus colegas de pelada!' }).catch(() => {})
       }
     } catch (err) {
       setVotacaoAbertaState(!open) // reverte

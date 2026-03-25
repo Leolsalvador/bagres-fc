@@ -153,7 +153,7 @@ function UserCard({ user, tab, onApprove, onReject, onToggleAdmin, onDelete }) {
         {/* Avatar */}
         <div className="w-11 h-11 rounded-full bg-elevated flex items-center justify-center overflow-hidden shrink-0">
           {user.foto_url
-            ? <img src={user.foto_url} alt={user.nome} className="w-full h-full object-cover" />
+            ? <img src={user.foto_url} alt={user.nome} className="w-full h-full object-contain" />
             : <User size={20} className="text-text-muted" />}
         </div>
 

@@ -110,10 +110,11 @@ create table public.votos (
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, nome, papel, status)
+  insert into public.profiles (id, nome, foto_url, papel, status)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', new.email),
+    new.raw_user_meta_data->>'avatar_url',
     'usuario',
     'pendente'
   );

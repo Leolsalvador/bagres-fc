@@ -77,17 +77,11 @@ export function AuthProvider({ children }) {
   }
 
   async function signUp(email, password, nome) {
-    const { data, error } = await supabase.auth.signUp({ email, password })
-    if (error) return { error }
-    // Profile is created automatically by the DB trigger (supabase/schema.sql)
-    // but we update the name here since the trigger uses email as fallback
-    if (data.user) {
-      await supabase
-        .from('profiles')
-        .update({ nome })
-        .eq('id', data.user.id)
-    }
-    return { data }
+    return supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: nome } },
+    })
   }
 
   async function signOut() {

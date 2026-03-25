@@ -29,9 +29,12 @@ export default function Home() {
   return (
     <div className="min-h-full bg-background">
       {/* Header */}
-      <div className="px-4 pt-10 pb-4">
-        <h1 className="text-2xl font-black text-text-main uppercase tracking-widest">Bagres FC</h1>
-        <p className="text-text-muted text-sm mt-0.5">Jogadores e histórico</p>
+      <div className="px-4 pt-10 pb-4 flex items-center gap-3">
+        <img src="/logo.png" alt="Bagres FC" className="w-12 h-12 rounded-full object-cover shrink-0" />
+        <div>
+          <h1 className="text-2xl font-black text-text-main uppercase tracking-widest">Bagres FC</h1>
+          <p className="text-text-muted text-sm">Jogadores e histórico</p>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -112,7 +115,7 @@ function PlayerCard({ player: p, rank, sortKey }) {
       </span>
       <div className="w-11 h-11 rounded-full bg-elevated flex items-center justify-center overflow-hidden shrink-0">
         {p.foto_url
-          ? <img src={p.foto_url} alt={p.nome} className="w-full h-full object-cover" />
+          ? <img src={p.foto_url} alt={p.nome} className="w-full h-full object-contain" />
           : <span className="text-xl">👤</span>}
       </div>
       <div className="flex-1 min-w-0">

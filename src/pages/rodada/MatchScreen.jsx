@@ -256,7 +256,7 @@ function FieldSide({ players, color, side }) {
             <div key={p.id} className="flex flex-col items-center gap-0.5">
               <div className={cn('w-8 h-8 rounded-full border-2 overflow-hidden bg-green-800', color.playerBorder)}>
                 {p.foto_url
-                  ? <img src={p.foto_url} alt={p.nome} className="w-full h-full object-cover" />
+                  ? <img src={p.foto_url} alt={p.nome} className="w-full h-full object-contain" />
                   : <div className="w-full h-full flex items-center justify-center text-sm">👤</div>}
               </div>
               <span className="text-white text-[8px] font-bold max-w-[36px] truncate text-center leading-tight">
@@ -323,7 +323,7 @@ function TeamSection({ team, color, onSelect, hideHeader = false }) {
           >
             <div className={cn('w-8 h-8 rounded-full border-2 overflow-hidden bg-card shrink-0', color.playerBorder)}>
               {p.foto_url
-                ? <img src={p.foto_url} alt={p.nome} className="w-full h-full object-cover" />
+                ? <img src={p.foto_url} alt={p.nome} className="w-full h-full object-contain" />
                 : <div className="w-full h-full flex items-center justify-center text-sm">👤</div>}
             </div>
             <div className="text-left">

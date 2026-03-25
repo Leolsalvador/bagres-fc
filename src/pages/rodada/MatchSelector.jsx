@@ -87,7 +87,7 @@ export default function MatchSelector({ teams, matches, onSelect, onEndRound, su
                   <div key={p.id} className="flex items-center gap-1.5">
                     <div className="w-5 h-5 rounded-full bg-elevated flex items-center justify-center overflow-hidden shrink-0">
                       {p.foto_url
-                        ? <img src={p.foto_url} alt={p.nome} className="w-full h-full object-cover" />
+                        ? <img src={p.foto_url} alt={p.nome} className="w-full h-full object-contain" />
                         : <span className="text-[9px]">👤</span>}
                     </div>
                     <span className="text-text-muted text-xs truncate">{p.nome.split(' ')[0]}</span>

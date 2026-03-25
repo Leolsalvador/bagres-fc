@@ -1,6 +1,13 @@
 // src/lib/api.js — Todas as queries do Supabase
 import { supabase } from './supabase'
 
+// ─── PUSH NOTIFICATIONS ─────────────────────────────────────
+export async function sendPushNotification({ title, body, userIds }) {
+  await supabase.functions.invoke('send-push', {
+    body: { title, body, userIds },
+  })
+}
+
 // ─── HELPERS ────────────────────────────────────────────────
 function nextMonday() {
   const d = new Date()
@@ -12,6 +19,26 @@ function nextMonday() {
 const PROFILE_FIELDS = 'id, nome, foto_url, rating, gols, assistencias, jogos, papel, status'
 
 // ─── PROFILES ───────────────────────────────────────────────
+export async function updateProfile(userId, { nome, foto_url }) {
+  const updates = {}
+  if (nome !== undefined) updates.nome = nome
+  if (foto_url !== undefined) updates.foto_url = foto_url
+  const { error } = await supabase.from('profiles').update(updates).eq('id', userId)
+  if (error) throw error
+}
+
+export async function uploadAvatar(userId, file) {
+  const ext = file.name.split('.').pop()
+  const path = `${userId}/avatar.${ext}`
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(path, file, { upsert: true })
+  if (uploadError) throw uploadError
+  const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+  // Cache-busting para forçar reload da imagem
+  return `${data.publicUrl}?t=${Date.now()}`
+}
+
 export async function fetchApprovedProfiles() {
   const { data, error } = await supabase
     .from('profiles')

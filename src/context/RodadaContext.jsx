@@ -5,6 +5,7 @@ import {
   updateRodadaStatus, finalizeRodada,
   saveDrawToDb, fetchTeams,
   savePartida, fetchMatchHistory,
+  sendPushNotification,
 } from '@/lib/api'
 import { drawTeams } from '@/lib/teamDraw'
 
@@ -50,6 +51,9 @@ export function RodadaProvider({ children }) {
         await finalizeRodada(rodada.id, matchHistory, presencas)
       } else {
         await updateRodadaStatus(rodada.id, status)
+      }
+      if (status === 'aberta') {
+        sendPushNotification({ title: '⚽ Lista aberta!', body: 'A lista da rodada está aberta. Confirme sua presença!' }).catch(() => {})
       }
     } catch (err) {
       console.error('Erro ao atualizar status:', err)
@@ -163,7 +167,8 @@ export function RodadaProvider({ children }) {
 
     try {
       const saved = await saveDrawToDb(rodada.id, drawn)
-      setTeams(saved) // atualiza com IDs do DB
+      setTeams(saved)
+      sendPushNotification({ title: '🎲 Times sorteados!', body: 'Os times foram sorteados. Veja sua equipe!' }).catch(() => {})
     } catch (err) {
       console.error('Erro ao salvar sorteio:', err)
     }
