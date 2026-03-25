@@ -115,7 +115,9 @@ export function RodadaProvider({ children }) {
     const lista = presencas.filter(p => p.posicao <= 20)
     const fila  = presencas.filter(p => p.posicao > 20)
     const isQueue = lista.length >= 20
-    const posicao = isQueue ? fila.length + 21 : lista.length + 1
+    const maxLista = lista.length > 0 ? Math.max(...lista.map(p => p.posicao)) : 0
+    const maxFila  = fila.length  > 0 ? Math.max(...fila.map(p => p.posicao))  : 20
+    const posicao = isQueue ? maxFila + 1 : maxLista + 1
     const status  = isQueue ? 'espera' : 'confirmado'
 
     // Optimistic
