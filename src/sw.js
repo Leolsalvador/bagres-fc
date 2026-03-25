@@ -4,6 +4,11 @@ import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
 precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
 
+// Permite que o botão "Atualizar" ative o novo SW imediatamente
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting()
+})
+
 // ── Push notifications ────────────────────────────────────────
 self.addEventListener('push', (event) => {
   const data = event.data?.json() ?? {}
