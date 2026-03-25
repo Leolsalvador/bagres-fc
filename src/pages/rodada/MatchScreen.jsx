@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { Play, Pause, RotateCcw, ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const MATCH_DURATION = 8 * 60 // 8 minutos em segundos
+const DURATION_FIRST  = 10 * 60 // 10 minutos (1º jogo)
+const DURATION_NORMAL =  8 * 60 //  8 minutos (demais)
 
 const TEAM_COLORS = [
   { border: 'border-blue-500',   text: 'text-blue-400',   playerBorder: 'border-blue-400'   },
@@ -33,8 +34,9 @@ function formatTime(s) {
   return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
 }
 
-export default function MatchScreen({ match, teamAIndex, teamBIndex, onEnd, onBack }) {
-  const [seconds, setSeconds]         = useState(MATCH_DURATION)
+export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatch, onEnd, onBack }) {
+  const duration = isFirstMatch ? DURATION_FIRST : DURATION_NORMAL
+  const [seconds, setSeconds]         = useState(duration)
   const [isRunning, setIsRunning]     = useState(false)
   const [goalsA, setGoalsA]           = useState(0)
   const [goalsB, setGoalsB]           = useState(0)
@@ -79,7 +81,7 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, onEnd, onBa
 
   function resetTimer() {
     setIsRunning(false)
-    setSeconds(MATCH_DURATION)
+    setSeconds(duration)
     setTimeExpired(false)
   }
 
@@ -91,7 +93,7 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, onEnd, onBa
 
   function handleAssistSelect(assistPlayer) {
     if (!pendingGoal) return
-    const minute = Math.floor((MATCH_DURATION - seconds) / 60)
+    const minute = Math.floor((duration - seconds) / 60)
 
     setEvents(ev => [
       ...ev,

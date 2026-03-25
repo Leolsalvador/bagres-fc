@@ -258,6 +258,7 @@ export default function AdminRodada() {
               match={currentMatch}
               teamAIndex={teams.findIndex(t => t.nome === currentMatch.teamA.nome)}
               teamBIndex={teams.findIndex(t => t.nome === currentMatch.teamB.nome)}
+              isFirstMatch={matchHistory.length === 0}
               onEnd={handleEndMatch}
               onBack={() => setCurrentMatch(null)}
             />
