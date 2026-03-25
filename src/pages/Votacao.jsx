@@ -160,7 +160,7 @@ export default function Votacao() {
         {/* Rating atual */}
         <div className="flex items-center gap-1 mt-3">
           <Star size={14} className="text-secondary fill-secondary" />
-          <span className="text-text-muted text-sm font-semibold">{current.rating.toFixed(1)} rating atual</span>
+          <span className="text-text-muted text-sm font-semibold">{(current.rating ?? 0).toFixed(1)} rating atual</span>
         </div>
       </div>
 
