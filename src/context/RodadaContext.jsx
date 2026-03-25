@@ -156,6 +156,11 @@ export function RodadaProvider({ children }) {
         )
         deletePresenca(removed.id).catch(console.error)
         updatePresenca(promoted.id, { posicao: removed.posicao, status: 'confirmado' }).catch(console.error)
+        sendPushNotification({
+          title: '🎉 Você entrou na lista!',
+          body: 'Uma vaga abriu e você foi promovido da fila de espera.',
+          userIds: [promoted.usuario_id],
+        }).catch(console.error)
         setPresencas(updated)
         return
       }
@@ -173,13 +178,25 @@ export function RodadaProvider({ children }) {
 
   // ── Presenças: ações do admin ────────────────────────────
   async function validatePayment(presencaId) {
-    setPresencas(ps => ps.map(p => p.id === presencaId ? { ...p, status: 'pago' } : p))
+    const p = presencas.find(pr => pr.id === presencaId)
+    setPresencas(ps => ps.map(pr => pr.id === presencaId ? { ...pr, status: 'pago' } : pr))
     updatePresenca(presencaId, { status: 'pago' }).catch(console.error)
+    if (p) sendPushNotification({
+      title: '✅ Pagamento confirmado!',
+      body: 'Sua presença na rodada está confirmada.',
+      userIds: [p.usuario_id],
+    }).catch(console.error)
   }
 
   async function rejectPayment(presencaId) {
-    setPresencas(ps => ps.map(p => p.id === presencaId ? { ...p, status: 'confirmado' } : p))
+    const p = presencas.find(pr => pr.id === presencaId)
+    setPresencas(ps => ps.map(pr => pr.id === presencaId ? { ...pr, status: 'confirmado' } : pr))
     updatePresenca(presencaId, { status: 'confirmado' }).catch(console.error)
+    if (p) sendPushNotification({
+      title: '❌ Pagamento rejeitado',
+      body: 'Seu pagamento foi rejeitado pelo admin. Verifique com o grupo.',
+      userIds: [p.usuario_id],
+    }).catch(console.error)
   }
 
   async function removeFromList(presencaId) {
@@ -197,6 +214,11 @@ export function RodadaProvider({ children }) {
         p.id === promoted.id ? { ...p, posicao: removed.posicao, status: 'confirmado' } : p
       )
       updatePresenca(promoted.id, { posicao: removed.posicao, status: 'confirmado' }).catch(console.error)
+      sendPushNotification({
+        title: '🎉 Você entrou na lista!',
+        body: 'Uma vaga abriu e você foi promovido da fila de espera.',
+        userIds: [promoted.usuario_id],
+      }).catch(console.error)
     }
     setPresencas(updated)
   }
