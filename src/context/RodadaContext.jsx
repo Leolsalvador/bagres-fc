@@ -5,7 +5,7 @@ import {
   updateRodadaStatus, finalizeRodada,
   saveDrawToDb, fetchTeams,
   savePartida, fetchMatchHistory,
-  sendPushNotification,
+  sendPushNotification, fetchAdminProfiles,
 } from '@/lib/api'
 import { drawTeams } from '@/lib/teamDraw'
 import { supabase } from '@/lib/supabase'
@@ -70,6 +70,14 @@ export function RodadaProvider({ children }) {
         await updateRodadaStatus(rodada.id, status)
       }
       if (status === 'aberta') {
+        // Insere todos os admins na lista automaticamente (posições 1, 2, ...)
+        const admins = await fetchAdminProfiles()
+        const adminPresencas = []
+        for (let i = 0; i < admins.length; i++) {
+          const p = await insertPresenca(rodada.id, admins[i].id, i + 1, 'confirmado')
+          adminPresencas.push(p)
+        }
+        setPresencas(adminPresencas)
         sendPushNotification({ title: '⚽ Lista aberta!', body: 'A lista da rodada está aberta. Confirme sua presença!' }).catch(() => {})
       }
     } catch (err) {

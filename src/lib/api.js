@@ -2,7 +2,7 @@
 import { supabase } from './supabase'
 import {
   USE_MOCK,
-  mockPlayers, mockRodada, mockPresencas,
+  mockCurrentUser, mockPlayers, mockRodada, mockPresencas,
   mockRodadasHistory, mockCiclo,
 } from './mockData'
 
@@ -52,6 +52,18 @@ export async function uploadAvatar(userId, file) {
   const { data } = supabase.storage.from('avatars').getPublicUrl(path)
   // Cache-busting para forçar reload da imagem
   return `${data.publicUrl}?t=${Date.now()}`
+}
+
+export async function fetchAdminProfiles() {
+  if (USE_MOCK) return [mockCurrentUser]
+  const { data, error } = await supabase
+    .from('profiles')
+    .select(PROFILE_FIELDS)
+    .eq('papel', 'admin')
+    .eq('status', 'aprovado')
+    .order('created_at')
+  if (error) throw error
+  return data ?? []
 }
 
 export async function fetchApprovedProfiles() {
