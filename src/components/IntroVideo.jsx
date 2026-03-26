@@ -6,9 +6,9 @@ export default function IntroVideo() {
   const videoRef = useRef(null)
 
   useEffect(() => {
-    if (!sessionStorage.getItem('intro_shown')) {
+    if (!localStorage.getItem('intro_shown')) {
       setVisible(true)
-      sessionStorage.setItem('intro_shown', '1')
+      localStorage.setItem('intro_shown', '1')
     }
   }, [])
 
