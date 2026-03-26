@@ -19,6 +19,7 @@ export default function IntroVideo() {
 
   function handleStart() {
     if (started || !videoRef.current) return
+    videoRef.current.muted = false
     videoRef.current.play().catch(() => {})
     setStarted(true)
   }
