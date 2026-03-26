@@ -12,12 +12,18 @@ export default function IntroVideo() {
     }
   }, [])
 
-  // Fallback: fecha após 8 segundos caso o vídeo não carregue
+  // Fecha exatamente após 8 segundos
   useEffect(() => {
     if (!visible) return
     const t = setTimeout(dismiss, 8000)
     return () => clearTimeout(t)
   }, [visible])
+
+  // Força play automático assim que o vídeo estiver pronto
+  useEffect(() => {
+    if (!videoReady || !videoRef.current) return
+    videoRef.current.play().catch(() => {})
+  }, [videoReady])
 
   function dismiss() {
     setVisible(false)
@@ -33,13 +39,12 @@ export default function IntroVideo() {
         autoPlay
         playsInline
         muted
+        loop
         className="w-full h-full object-cover"
         onCanPlay={() => setVideoReady(true)}
-        onEnded={dismiss}
         onError={dismiss}
       />
 
-      {/* Mostra logo enquanto o vídeo carrega */}
       {!videoReady && (
         <div className="absolute inset-0 flex items-center justify-center">
           <img src="/logo.png" alt="Bagres FC" className="w-24 h-24 rounded-full" />
