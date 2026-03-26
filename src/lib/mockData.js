@@ -163,6 +163,49 @@ export const mockPresencas = [
   { id: 'pr15', rodada_id: 'mock-rodada-1', usuario_id: 'u15',     posicao: 24, status: 'espera',     profiles: mockPlayers[14] },
 ]
 
+// ─── Feed social ──────────────────────────────────────────────
+export const mockFeedPosts = [
+  {
+    id: 'post-1',
+    autor_id: 'u-admin',
+    legenda: 'Que jogo incrível hoje! Time azul arrasando 🔵⚽',
+    imagem_url: 'https://placehold.co/400x500/1F2937/00C853?text=Foto+do+Jogo',
+    created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 min atrás
+    profiles: { id: 'u-admin', nome: 'Leonardo Salvador', foto_url: null },
+    feed_comentarios: [{ count: 3 }],
+  },
+  {
+    id: 'post-2',
+    autor_id: 'u-admin',
+    legenda: 'Galera reunida pra mais uma pelada 💪🏽 Sexta que vem tem mais!',
+    imagem_url: 'https://placehold.co/400x500/1F2937/FFD600?text=Pelada+da+Semana',
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5h atrás
+    profiles: { id: 'u-admin', nome: 'Leonardo Salvador', foto_url: null },
+    feed_comentarios: [{ count: 1 }],
+  },
+  {
+    id: 'post-3',
+    autor_id: 'u-admin',
+    legenda: null,
+    imagem_url: 'https://placehold.co/400x500/1F2937/EF4444?text=Gol+do+Mes',
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 dia atrás
+    profiles: { id: 'u-admin', nome: 'Leonardo Salvador', foto_url: null },
+    feed_comentarios: [{ count: 0 }],
+  },
+]
+
+export const mockFeedComentarios = {
+  'post-1': [
+    { id: 'c1', post_id: 'post-1', autor_id: 'u01', texto: 'Demais! Quero ver o gol do Carlos 🔥', created_at: new Date(Date.now() - 1000 * 60 * 25).toISOString(), profiles: { id: 'u01', nome: 'Carlos Silva', foto_url: null } },
+    { id: 'c2', post_id: 'post-1', autor_id: 'u02', texto: 'Rodada top demais, voltando forte semana que vem', created_at: new Date(Date.now() - 1000 * 60 * 20).toISOString(), profiles: { id: 'u02', nome: 'João Santos', foto_url: null } },
+    { id: 'c3', post_id: 'post-1', autor_id: 'u03', texto: '👏👏👏', created_at: new Date(Date.now() - 1000 * 60 * 10).toISOString(), profiles: { id: 'u03', nome: 'Pedro Oliveira', foto_url: null } },
+  ],
+  'post-2': [
+    { id: 'c4', post_id: 'post-2', autor_id: 'u04', texto: 'Tô dentro na sexta!', created_at: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(), profiles: { id: 'u04', nome: 'Lucas Costa', foto_url: null } },
+  ],
+  'post-3': [],
+}
+
 // ─── Ciclo de votação ─────────────────────────────────────────
 export const mockCiclo = {
   id: 'ciclo-mock-1',

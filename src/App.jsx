@@ -13,6 +13,8 @@ import Rodada from '@/pages/Rodada'
 import Votacao from '@/pages/Votacao'
 import Perfil from '@/pages/Perfil'
 import PerfilPublico from '@/pages/PerfilPublico'
+import Feed from '@/pages/Feed'
+import FeedPost from '@/pages/FeedPost'
 import Usuarios from '@/pages/admin/Usuarios'
 
 export default function App() {
@@ -36,6 +38,8 @@ export default function App() {
               <Route path="/votacao" element={<Votacao />} />
               <Route path="/perfil" element={<Perfil />} />
               <Route path="/jogador/:id" element={<PerfilPublico />} />
+              <Route path="/feed" element={<Feed />} />
+              <Route path="/feed/:postId" element={<FeedPost />} />
 
               {/* Apenas admin */}
               <Route element={<AdminRoute />}>

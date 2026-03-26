@@ -1,10 +1,13 @@
 import { useState, useRef } from 'react'
-import { LogOut, Star, Target, Handshake, Shirt, Pencil, Check, X, Camera } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { LogOut, Star, Target, Handshake, Shirt, Pencil, Check, X, Camera, ShieldCheck } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { updateProfile, uploadAvatar } from '@/lib/api'
 
 export default function Perfil() {
   const { profile, refreshProfile, signOut } = useAuth()
+  const navigate = useNavigate()
+  const isAdmin = profile?.papel === 'admin'
 
   const [editing, setEditing]     = useState(false)
   const [nome, setNome]           = useState('')
@@ -185,6 +188,19 @@ export default function Perfil() {
           </div>
         ))}
       </div>
+
+      {/* Painel Admin */}
+      {isAdmin && (
+        <div className="mx-4 mb-3">
+          <button
+            onClick={() => navigate('/admin/usuarios')}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-secondary/30 text-secondary text-sm font-semibold active:scale-95 transition-transform"
+          >
+            <ShieldCheck size={16} />
+            Painel Admin
+          </button>
+        </div>
+      )}
 
       {/* Sair */}
       <div className="mx-4">

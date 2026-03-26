@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 import {
   USE_MOCK, mockMatchHistory,
   mockCurrentUser, mockPlayers, mockRodada, mockPresencas,
-  mockRodadasHistory, mockCiclo,
+  mockRodadasHistory, mockCiclo, mockFeedPosts, mockFeedComentarios,
 } from './mockData'
 
 // ─── PUSH NOTIFICATIONS ─────────────────────────────────────
@@ -451,6 +451,99 @@ export async function fetchRodadasEncerradas() {
       winner: !p.vencedor_id ? 'draw' : p.vencedor_id === p.time_a?.id ? 'A' : 'B',
     })),
   }))
+}
+
+// ─── FEED SOCIAL ─────────────────────────────────────────────
+const FEED_PAGE_SIZE = 5
+
+export async function fetchFeedPosts(page = 0) {
+  if (USE_MOCK) {
+    const start = page * FEED_PAGE_SIZE
+    return mockFeedPosts.slice(start, start + FEED_PAGE_SIZE)
+  }
+  const from = page * FEED_PAGE_SIZE
+  const to = from + FEED_PAGE_SIZE - 1
+  const { data, error } = await supabase
+    .from('feed_posts')
+    .select('id, autor_id, legenda, imagem_url, created_at, profiles(id, nome, foto_url), feed_comentarios(count)')
+    .order('created_at', { ascending: false })
+    .range(from, to)
+  if (error) throw error
+  return data ?? []
+}
+
+export async function fetchFeedPost(postId) {
+  if (USE_MOCK) return mockFeedPosts.find(p => p.id === postId) ?? null
+  const { data, error } = await supabase
+    .from('feed_posts')
+    .select('id, autor_id, legenda, imagem_url, created_at, profiles(id, nome, foto_url), feed_comentarios(count)')
+    .eq('id', postId)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+export async function fetchFeedComentarios(postId) {
+  if (USE_MOCK) return mockFeedComentarios[postId] ?? []
+  const { data, error } = await supabase
+    .from('feed_comentarios')
+    .select('id, post_id, autor_id, texto, created_at, profiles(id, nome, foto_url)')
+    .eq('post_id', postId)
+    .order('created_at')
+  if (error) throw error
+  return data ?? []
+}
+
+export async function createFeedPost(autorId, legenda, file) {
+  if (USE_MOCK) {
+    return {
+      id: 'post-mock-' + Date.now(),
+      autor_id: autorId,
+      legenda: legenda || null,
+      imagem_url: URL.createObjectURL(file),
+      created_at: new Date().toISOString(),
+      profiles: { id: autorId, nome: 'Leonardo Salvador', foto_url: null },
+      feed_comentarios: [{ count: 0 }],
+    }
+  }
+  const ext = file.name.split('.').pop()
+  const path = `feed/${autorId}/${Date.now()}.${ext}`
+  const { error: uploadError } = await supabase.storage.from('feed-images').upload(path, file)
+  if (uploadError) throw uploadError
+  const { data: urlData } = supabase.storage.from('feed-images').getPublicUrl(path)
+  const { data, error } = await supabase
+    .from('feed_posts')
+    .insert({ autor_id: autorId, legenda: legenda || null, imagem_url: urlData.publicUrl })
+    .select('id, autor_id, legenda, imagem_url, created_at, profiles(id, nome, foto_url), feed_comentarios(count)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function createFeedComentario(postId, autorId, texto) {
+  if (USE_MOCK) {
+    return {
+      id: 'c-mock-' + Date.now(),
+      post_id: postId,
+      autor_id: autorId,
+      texto,
+      created_at: new Date().toISOString(),
+      profiles: { id: autorId, nome: 'Leonardo Salvador', foto_url: null },
+    }
+  }
+  const { data, error } = await supabase
+    .from('feed_comentarios')
+    .insert({ post_id: postId, autor_id: autorId, texto })
+    .select('id, post_id, autor_id, texto, created_at, profiles(id, nome, foto_url)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteFeedPost(postId) {
+  if (USE_MOCK) return
+  const { error } = await supabase.from('feed_posts').delete().eq('id', postId)
+  if (error) throw error
 }
 
 function computeTimeDaRodada(partidas) {
