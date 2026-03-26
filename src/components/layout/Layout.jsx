@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import { Bell, X, RefreshCw } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import BottomNav from './BottomNav'
 import { useAuth } from '@/hooks/useAuth'
@@ -12,14 +12,6 @@ export default function Layout() {
   const [dismissedNotif, setDismissedNotif] = useState(false)
 
   const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW()
-  const [introActive, setIntroActive] = useState(true)
-
-  useEffect(() => {
-    const handler = () => setIntroActive(false)
-    window.addEventListener('intro-done', handler)
-    return () => window.removeEventListener('intro-done', handler)
-  }, [])
-
   const showNotifBanner = profile?.id && permission === 'default' && !dismissedNotif
 
   return (
@@ -58,7 +50,7 @@ export default function Layout() {
       <main className="flex-1 overflow-y-auto pb-16">
         <Outlet />
       </main>
-      {!introActive && <BottomNav />}
+      <BottomNav />
     </div>
   )
 }
