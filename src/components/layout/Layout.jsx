@@ -12,7 +12,7 @@ export default function Layout() {
   const [dismissedNotif, setDismissedNotif] = useState(false)
 
   const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW()
-  const [introActive, setIntroActive] = useState(() => !localStorage.getItem('intro_shown'))
+  const [introActive, setIntroActive] = useState(true)
 
   useEffect(() => {
     const handler = () => setIntroActive(false)
