@@ -17,8 +17,9 @@ import Usuarios from '@/pages/admin/Usuarios'
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <>
       <IntroVideo />
+    <BrowserRouter>
       <InstallPWA />
       <AuthProvider>
       <RodadaProvider>
@@ -51,5 +52,6 @@ export default function App() {
       </RodadaProvider>
       </AuthProvider>
     </BrowserRouter>
+    </>
   )
 }
