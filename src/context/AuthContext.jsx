@@ -14,9 +14,24 @@ export function AuthProvider({ children }) {
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single()
-    setProfile(data)
-    return data
+      .maybeSingle()
+
+    if (data) {
+      setProfile(data)
+      return data
+    }
+
+    // Perfil não existe — primeiro login via Google OAuth
+    // Cria como pendente para o admin aprovar
+    const { data: { user: u } } = await supabase.auth.getUser()
+    const nome = u?.user_metadata?.full_name || u?.user_metadata?.name || u?.email || 'Novo Jogador'
+    const { data: newProfile } = await supabase
+      .from('profiles')
+      .insert({ id: userId, nome, email: u?.email, status: 'pendente', papel: 'usuario' })
+      .select()
+      .maybeSingle()
+    setProfile(newProfile)
+    return newProfile
   }
 
   useEffect(() => {
@@ -80,7 +95,7 @@ export function AuthProvider({ children }) {
   async function signInWithGoogle() {
     return supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: `${window.location.origin}/login` },
     })
   }
 
