@@ -12,10 +12,15 @@ export default function IntroVideo() {
     }
   }, [])
 
+  function dismiss() {
+    setVisible(false)
+    window.dispatchEvent(new Event('intro-done'))
+  }
+
   // Fecha após 8 segundos do início
   useEffect(() => {
     if (!started) return
-    const t = setTimeout(() => setVisible(false), 8000)
+    const t = setTimeout(dismiss, 8000)
     return () => clearTimeout(t)
   }, [started])
 
@@ -36,7 +41,7 @@ export default function IntroVideo() {
         muted
         loop
         className="w-full h-full object-cover"
-        onError={() => setVisible(false)}
+        onError={dismiss}
       />
 
       {/* Overlay de toque — some quando o vídeo começa */}
