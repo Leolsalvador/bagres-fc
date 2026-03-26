@@ -308,14 +308,14 @@ export async function finalizeRodada(rodadaId, matchHistory, presencas) {
     garcom_id: garcom?.id ?? null,
   })
 
-  // Incrementa jogos para os 20 da lista principal
+  // Incrementa gols, assistências e jogos para os 20 da lista principal
   const lista = presencas.filter(p => p.posicao <= 20)
   await Promise.all(
     lista.map(p =>
       supabase.rpc('increment_player_stats', {
         player_id: p.usuario_id,
-        gols_add: 0,
-        assistencias_add: 0,
+        gols_add: goalMap[p.usuario_id]?.count ?? 0,
+        assistencias_add: assistMap[p.usuario_id]?.count ?? 0,
         jogos_add: 1,
       })
     )
