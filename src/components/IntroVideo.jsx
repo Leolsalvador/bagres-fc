@@ -1,7 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 
 export default function IntroVideo() {
-  const [visible, setVisible] = useState(true)
+  const [visible, setVisible] = useState(() => {
+    if (sessionStorage.getItem('intro-shown')) return false
+    sessionStorage.setItem('intro-shown', '1')
+    return true
+  })
   const [started, setStarted] = useState(false)
   const videoRef = useRef(null)
 
