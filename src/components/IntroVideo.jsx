@@ -33,7 +33,7 @@ export default function IntroVideo() {
         autoPlay
         playsInline
         muted
-        className="w-full h-full object-contain bg-black"
+        className="w-full h-full object-cover"
         onCanPlay={() => setVideoReady(true)}
         onEnded={dismiss}
         onError={dismiss}
