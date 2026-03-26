@@ -32,7 +32,7 @@ export default function IntroVideo() {
   if (!visible) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-black">
+    <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
       <video
         ref={videoRef}
         src="/intro.mp4"
@@ -40,7 +40,7 @@ export default function IntroVideo() {
         playsInline
         muted
         loop
-        className="w-full h-full object-cover"
+        className="w-full h-auto"
         onCanPlay={() => setVideoReady(true)}
         onError={dismiss}
       />
