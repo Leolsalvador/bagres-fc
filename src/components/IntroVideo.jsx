@@ -40,7 +40,7 @@ export default function IntroVideo() {
         playsInline
         muted
         loop
-        className="w-full h-auto"
+        className="h-full w-auto"
         onCanPlay={() => setVideoReady(true)}
         onError={dismiss}
       />
