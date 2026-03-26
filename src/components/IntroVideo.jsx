@@ -13,7 +13,7 @@ export default function IntroVideo() {
   // Fecha após 8 segundos do início
   useEffect(() => {
     if (!started) return
-    const t = setTimeout(dismiss, 8000)
+    const t = setTimeout(dismiss, 9000)
     return () => clearTimeout(t)
   }, [started])
 
