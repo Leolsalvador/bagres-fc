@@ -13,6 +13,19 @@ export default function Perfil() {
   const [error, setError]         = useState('')
   const fileRef = useRef(null)
 
+  const POSICOES = ['ATA', 'MEI', 'ZAG', 'GOL', 'CORINGA']
+  const POSICAO_LABEL = { ATA: 'Atacante', MEI: 'Meia', ZAG: 'Zagueiro', GOL: 'Goleiro', CORINGA: 'Coringa' }
+  const POSICAO_COLOR = { ATA: 'bg-red-500/20 text-red-400', MEI: 'bg-blue-500/20 text-blue-400', ZAG: 'bg-yellow-500/20 text-yellow-400', GOL: 'bg-purple-500/20 text-purple-400', CORINGA: 'bg-primary/20 text-primary' }
+
+  async function savePosicao(pos) {
+    try {
+      await updateProfile(profile.id, { posicao_campo: pos })
+      await refreshProfile()
+    } catch {
+      setError('Erro ao salvar posição.')
+    }
+  }
+
   const stats = [
     { label: 'Gols',    value: profile?.gols ?? 0,                                icon: Target    },
     { label: 'Assist.', value: profile?.assistencias ?? 0,                         icon: Handshake },
@@ -136,6 +149,29 @@ export default function Perfil() {
 
         {error && (
           <p className="text-danger text-xs mt-2 text-center">{error}</p>
+        )}
+      </div>
+
+      {/* Posição */}
+      <div className="mx-4 mb-6">
+        <p className="text-text-muted text-xs font-semibold uppercase tracking-wider mb-3">Minha posição</p>
+        <div className="flex gap-2 flex-wrap">
+          {POSICOES.map(pos => (
+            <button
+              key={pos}
+              onClick={() => savePosicao(pos)}
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 ${
+                profile?.posicao_campo === pos
+                  ? POSICAO_COLOR[pos]
+                  : 'bg-card text-text-muted'
+              }`}
+            >
+              {pos}
+            </button>
+          ))}
+        </div>
+        {profile?.posicao_campo && (
+          <p className="text-text-muted text-xs mt-2">{POSICAO_LABEL[profile.posicao_campo]}</p>
         )}
       </div>
 

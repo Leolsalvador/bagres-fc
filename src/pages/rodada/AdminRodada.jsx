@@ -1,11 +1,14 @@
 import { useState } from 'react'
-import { Check, X, Trash2, Shuffle, Play, LogIn, XCircle } from 'lucide-react'
+import { Check, X, Trash2, Shuffle, Play, LogIn, XCircle, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useRodada } from '@/context/RodadaContext'
 import { useAuth } from '@/hooks/useAuth'
+import { USE_MOCK } from '@/lib/mockData'
 import TeamsGrid from './TeamsGrid'
 import MatchSelector from './MatchSelector'
 import MatchScreen from './MatchScreen'
+
+const DEV_STATES = ['aguardando', 'aberta', 'sorteada', 'em_jogo', 'encerrada']
 
 const STATUS_LABEL = {
   aguardando: 'Aguardando abertura',
@@ -38,9 +41,10 @@ export default function AdminRodada() {
   const [waitingQueue, setWaitingQueue]   = useState([0, 1, 2, 3])
   const [onFieldWinner, setOnFieldWinner] = useState(null)
 
-  const lista  = presencas.filter(p => p.posicao <= 20).sort((a, b) => a.posicao - b.posicao)
-  const fila   = presencas.filter(p => p.posicao > 20).sort((a, b) => a.posicao - b.posicao)
-  const pagos  = lista.filter(p => p.status === 'pago').length
+  const lista     = presencas.filter(p => p.posicao <= 20).sort((a, b) => a.posicao - b.posicao)
+  const fila      = presencas.filter(p => p.posicao > 20 && p.posicao < 100).sort((a, b) => a.posicao - b.posicao)
+  const goleiros  = presencas.filter(p => p.posicao >= 100).sort((a, b) => a.posicao - b.posicao)
+  const pagos     = lista.filter(p => p.status === 'pago').length
 
   function handleDraw() {
     setCurrentMatch(null)
@@ -118,6 +122,17 @@ export default function AdminRodada() {
           </span>
         </div>
 
+        {USE_MOCK && (
+          <button
+            onClick={() => {
+              const idx = DEV_STATES.indexOf(rodada.status)
+              setStatus(DEV_STATES[(idx + 1) % DEV_STATES.length])
+            }}
+            className="flex items-center gap-1 bg-secondary/20 text-secondary text-xs font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-transform"
+          >
+            [DEV] <ChevronRight size={12} />
+          </button>
+        )}
       </div>
 
       {/* ── AGUARDANDO ── */}
@@ -214,6 +229,23 @@ export default function AdminRodada() {
             </>
           )}
 
+          {/* Goleiros */}
+          <p className="text-text-muted text-xs font-semibold uppercase tracking-wider mt-2">
+            Goleiros ({goleiros.length})
+          </p>
+          {goleiros.length === 0 && (
+            <p className="text-text-muted text-xs text-center py-2">Nenhum goleiro confirmado.</p>
+          )}
+          {goleiros.map((p, i) => (
+            <PlayerRow
+              key={p.id}
+              presenca={p}
+              position={i + 1}
+              isGol
+              onRemove={() => removeFromList(p.id)}
+            />
+          ))}
+
           {/* Botão sortear */}
           <button
             onClick={handleDraw}
@@ -292,7 +324,15 @@ export default function AdminRodada() {
   )
 }
 
-function PlayerRow({ presenca, position, isQueue = false, onValidate, onReject, onRemove }) {
+const POSICAO_COLOR = {
+  ATA: 'bg-red-500/20 text-red-400',
+  MEI: 'bg-blue-500/20 text-blue-400',
+  ZAG: 'bg-yellow-500/20 text-yellow-400',
+  GOL: 'bg-purple-500/20 text-purple-400',
+  CORINGA: 'bg-primary/20 text-primary',
+}
+
+function PlayerRow({ presenca, position, isQueue = false, isGol = false, onValidate, onReject, onRemove }) {
   const { profiles: p, status } = presenca
 
   return (
@@ -313,8 +353,15 @@ function PlayerRow({ presenca, position, isQueue = false, onValidate, onReject, 
         {/* Nome */}
         <p className="text-text-main text-sm font-semibold flex-1 truncate">{p?.nome}</p>
 
+        {/* Badge posição */}
+        {p?.posicao_campo && (
+          <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0', POSICAO_COLOR[p.posicao_campo])}>
+            {p.posicao_campo}
+          </span>
+        )}
+
         {/* Status badge */}
-        {!isQueue && (
+        {!isQueue && !isGol && (
           <span className={cn(
             'text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0',
             status === 'pago'

@@ -9,12 +9,15 @@ export default function PlayerRodada() {
   const { profile } = useAuth()
   const userId = profile?.id
 
-  const lista = presencas.filter(p => p.posicao <= 20).sort((a, b) => a.posicao - b.posicao)
-  const fila  = presencas.filter(p => p.posicao > 20).sort((a, b) => a.posicao - b.posicao)
+  const lista    = presencas.filter(p => p.posicao <= 20).sort((a, b) => a.posicao - b.posicao)
+  const fila     = presencas.filter(p => p.posicao > 20 && p.posicao < 100).sort((a, b) => a.posicao - b.posicao)
+  const goleiros = presencas.filter(p => p.posicao >= 100).sort((a, b) => a.posicao - b.posicao)
 
   const myPresenca = presencas.find(p => p.usuario_id === userId)
+  const isGol      = profile?.posicao_campo === 'GOL'
   const isOnList   = myPresenca && myPresenca.posicao <= 20
-  const isOnQueue  = myPresenca && myPresenca.posicao > 20
+  const isOnQueue  = myPresenca && myPresenca.posicao > 20 && myPresenca.posicao < 100
+  const isOnGol    = myPresenca && myPresenca.posicao >= 100
   const queuePos   = isOnQueue ? fila.findIndex(p => p.usuario_id === userId) + 1 : null
 
   if (loading) {
@@ -62,14 +65,31 @@ export default function PlayerRodada() {
           {/* Status do usuário */}
           {!myPresenca && (
             <div className="bg-card rounded-2xl p-5 text-center space-y-3">
-              <p className="text-text-main font-semibold">
-                Lista aberta! · <span className="text-primary">{20 - lista.length} vagas</span>
-              </p>
+              {isGol ? (
+                <p className="text-text-main font-semibold">Lista aberta! · <span className="text-purple-400">Confirmar como goleiro</span></p>
+              ) : (
+                <p className="text-text-main font-semibold">Lista aberta! · <span className="text-primary">{20 - lista.length} vagas</span></p>
+              )}
               <button
                 onClick={() => joinList(userId, profile)}
                 className="w-full bg-primary text-black font-bold py-3 rounded-xl active:scale-95 transition-transform"
               >
-                {lista.length < 20 ? 'Entrar na lista' : 'Entrar na fila de espera'}
+                {isGol ? 'Confirmar presença (Goleiro)' : lista.length < 20 ? 'Entrar na lista' : 'Entrar na fila de espera'}
+              </button>
+            </div>
+          )}
+
+          {isOnGol && (
+            <div className="bg-card rounded-2xl p-4 space-y-3">
+              <p className="text-text-muted text-xs font-semibold uppercase tracking-wider">Você está confirmado como goleiro</p>
+              <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl px-4 py-3 text-center">
+                <p className="text-purple-400 font-semibold text-sm">🥅 Goleiro confirmado</p>
+              </div>
+              <button
+                onClick={() => leaveList(userId)}
+                className="w-full border border-danger/30 text-danger text-sm font-semibold py-2.5 rounded-xl active:scale-95 transition-transform"
+              >
+                Retirar meu nome
               </button>
             </div>
           )}
@@ -147,6 +167,26 @@ export default function PlayerRodada() {
                     <span className="text-sm">👤</span>
                   </div>
                   <p className={cn('text-sm font-semibold flex-1 truncate', p.usuario_id === userId ? 'text-secondary' : 'text-text-main')}>
+                    {p.profiles?.nome}
+                    {p.usuario_id === userId && ' (você)'}
+                  </p>
+                </div>
+              ))}
+            </>
+          )}
+
+          {goleiros.length > 0 && (
+            <>
+              <p className="text-text-muted text-xs font-semibold uppercase tracking-wider mt-2">Goleiros ({goleiros.length})</p>
+              {goleiros.map((p) => (
+                <div key={p.id} className="bg-card rounded-2xl p-3 flex items-center gap-3">
+                  <span className="text-purple-400 text-xs font-bold w-6 text-center shrink-0">🥅</span>
+                  <div className="w-9 h-9 rounded-full bg-elevated flex items-center justify-center overflow-hidden shrink-0">
+                    {p.profiles?.foto_url
+                      ? <img src={p.profiles.foto_url} alt={p.profiles.nome} className="w-full h-full object-contain" />
+                      : <span className="text-sm">👤</span>}
+                  </div>
+                  <p className={cn('text-sm font-semibold flex-1 truncate', p.usuario_id === userId ? 'text-purple-400' : 'text-text-main')}>
                     {p.profiles?.nome}
                     {p.usuario_id === userId && ' (você)'}
                   </p>

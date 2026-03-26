@@ -33,7 +33,7 @@ function nextMonday() {
   return d.toISOString().split('T')[0]
 }
 
-const PROFILE_FIELDS = 'id, nome, foto_url, rating, gols, assistencias, jogos, papel, status'
+const PROFILE_FIELDS = 'id, nome, foto_url, rating, gols, assistencias, jogos, papel, status, posicao_campo'
 
 // ─── PROFILES ───────────────────────────────────────────────
 export async function updateProfile(userId, { nome, foto_url }) {

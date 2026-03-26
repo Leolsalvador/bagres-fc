@@ -9,7 +9,7 @@ import {
 } from '@/lib/api'
 import { drawTeams } from '@/lib/teamDraw'
 import { supabase } from '@/lib/supabase'
-import { USE_MOCK } from '@/lib/mockData'
+import { USE_MOCK, mockPresencas } from '@/lib/mockData'
 
 const RodadaContext = createContext(null)
 
@@ -63,6 +63,10 @@ export function RodadaProvider({ children }) {
   async function setStatus(status) {
     if (!rodada) return
     setRodada(r => ({ ...r, status })) // optimistic
+    if (USE_MOCK && status === 'aberta') {
+      setPresencas(mockPresencas)
+      return
+    }
     try {
       if (status === 'encerrada') {
         await finalizeRodada(rodada.id, matchHistory, presencas)
@@ -120,8 +124,27 @@ export function RodadaProvider({ children }) {
   // ── Presenças: ações do jogador ──────────────────────────
   async function joinList(userId, profile) {
     if (!rodada) return
+
+    // Goleiros entram numa faixa separada (100+) e são sempre confirmados
+    const isGol = profile?.posicao_campo === 'GOL'
+    if (isGol) {
+      const goleiros = presencas.filter(p => p.posicao >= 100)
+      const maxGol   = goleiros.length > 0 ? Math.max(...goleiros.map(p => p.posicao)) : 99
+      const posicao  = maxGol + 1
+      const temp = { id: `temp-${userId}`, rodada_id: rodada.id, usuario_id: userId, posicao, status: 'confirmado', profiles: profile }
+      setPresencas(ps => [...ps, temp])
+      try {
+        const real = await insertPresenca(rodada.id, userId, posicao, 'confirmado')
+        setPresencas(ps => ps.map(p => p.id === temp.id ? real : p))
+      } catch (err) {
+        setPresencas(ps => ps.filter(p => p.id !== temp.id))
+        console.error('Erro ao entrar na lista:', err)
+      }
+      return
+    }
+
     const lista = presencas.filter(p => p.posicao <= 20)
-    const fila  = presencas.filter(p => p.posicao > 20)
+    const fila  = presencas.filter(p => p.posicao > 20 && p.posicao < 100)
     const isQueue = lista.length >= 20
     const maxLista = lista.length > 0 ? Math.max(...lista.map(p => p.posicao)) : 0
     const maxFila  = fila.length  > 0 ? Math.max(...fila.map(p => p.posicao))  : 20
@@ -148,7 +171,7 @@ export function RodadaProvider({ children }) {
     // Optimistic
     let updated = presencas.filter(p => p.usuario_id !== userId)
     if (removed.posicao <= 20) {
-      const filaOrdenada = updated.filter(p => p.posicao > 20).sort((a, b) => a.posicao - b.posicao)
+      const filaOrdenada = updated.filter(p => p.posicao > 20 && p.posicao < 100).sort((a, b) => a.posicao - b.posicao)
       if (filaOrdenada.length > 0) {
         const promoted = filaOrdenada[0]
         updated = updated.map(p =>
@@ -204,7 +227,7 @@ export function RodadaProvider({ children }) {
     if (!removed) return
 
     let updated = presencas.filter(p => p.id !== presencaId)
-    const fila = updated.filter(p => p.posicao > 20).sort((a, b) => a.posicao - b.posicao)
+    const fila = updated.filter(p => p.posicao > 20 && p.posicao < 100).sort((a, b) => a.posicao - b.posicao)
 
     deletePresenca(presencaId).catch(console.error)
 
