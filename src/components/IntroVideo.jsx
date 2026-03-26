@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 
 export default function IntroVideo() {
   const [visible, setVisible] = useState(false)
+  const [started, setStarted] = useState(false)
   const videoRef = useRef(null)
 
   useEffect(() => {
@@ -11,33 +12,40 @@ export default function IntroVideo() {
     }
   }, [])
 
-  // Fecha após 8 segundos
+  // Fecha após 8 segundos do início
   useEffect(() => {
-    if (!visible) return
+    if (!started) return
     const t = setTimeout(() => setVisible(false), 8000)
     return () => clearTimeout(t)
-  }, [visible])
+  }, [started])
 
-  // Força play assim que o elemento existir
-  useEffect(() => {
-    if (!visible || !videoRef.current) return
+  function handleStart() {
+    if (started || !videoRef.current) return
     videoRef.current.play().catch(() => {})
-  }, [visible])
+    setStarted(true)
+  }
 
   if (!visible) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-black">
+    <div className="fixed inset-0 z-50 bg-black" onClick={handleStart}>
       <video
         ref={videoRef}
         src="/intro.mp4"
-        autoPlay
         playsInline
         muted
         loop
         className="w-full h-full object-cover"
         onError={() => setVisible(false)}
       />
+
+      {/* Overlay de toque — some quando o vídeo começa */}
+      {!started && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-6">
+          <img src="/logo.png" alt="Bagres FC" className="w-28 h-28 rounded-full" />
+          <p className="text-white font-bold text-lg tracking-widest animate-pulse">TOQUE PARA COMEÇAR</p>
+        </div>
+      )}
     </div>
   )
 }
