@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { fetchLatestCiclo, createCiclo, updateCiclo, sendPushNotification } from '@/lib/api'
+import { fetchLatestCiclo, createCiclo, sendPushNotification } from '@/lib/api'
 
 const VotacaoContext = createContext(null)
 
@@ -16,28 +16,19 @@ export function VotacaoProvider({ children }) {
       .catch(console.error)
   }, [])
 
-  async function setVotacaoAberta(open) {
-    setVotacaoAbertaState(open) // optimistic
+  async function reabrirVotacao() {
     try {
-      if (!ciclo) {
-        if (open) {
-          const novo = await createCiclo()
-          setCiclo(novo)
-          sendPushNotification({ title: '⭐ Votação aberta!', body: 'Avalie seus colegas de pelada!' }).catch(() => {})
-        }
-      } else {
-        await updateCiclo(ciclo.id, open)
-        setCiclo(c => ({ ...c, aberta: open }))
-        if (open) sendPushNotification({ title: '⭐ Votação aberta!', body: 'Avalie seus colegas de pelada!' }).catch(() => {})
-      }
+      const novo = await createCiclo()
+      setCiclo(novo)
+      setVotacaoAbertaState(true)
+      sendPushNotification({ title: '⭐ Votação aberta!', body: 'Avalie seus colegas de pelada!' }).catch(() => {})
     } catch (err) {
-      setVotacaoAbertaState(!open) // reverte
-      console.error('Erro ao alterar votação:', err)
+      console.error('Erro ao reabrir votação:', err)
     }
   }
 
   return (
-    <VotacaoContext.Provider value={{ ciclo, votacaoAberta, setVotacaoAberta }}>
+    <VotacaoContext.Provider value={{ ciclo, votacaoAberta, reabrirVotacao }}>
       {children}
     </VotacaoContext.Provider>
   )

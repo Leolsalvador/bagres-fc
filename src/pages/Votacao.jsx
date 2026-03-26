@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Star, Vote } from 'lucide-react'
+import { Star, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { useVotacao } from '@/context/VotacaoContext'
@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase'
 
 export default function Votacao() {
   const { profile } = useAuth()
-  const { ciclo, votacaoAberta, setVotacaoAberta } = useVotacao()
+  const { ciclo, votacaoAberta, reabrirVotacao } = useVotacao()
   const isAdmin = profile?.papel === 'admin'
 
   const [players, setPlayers] = useState([])
@@ -28,7 +28,6 @@ export default function Votacao() {
     const others = all.filter(p => p.id !== profile.id)
     setPlayers(others)
     if (!ciclo?.id) return
-    // Usa votos já em memória se passados (evita re-fetch desnecessário)
     const votoMap = currentVotos ?? (() => {
       const m = {}
       return m
@@ -38,13 +37,17 @@ export default function Votacao() {
       existingVotos.forEach(v => { votoMap[v.avaliado_id] = v.nota })
       setVotos(votoMap)
     }
-    // Avança o index para o primeiro jogador ainda não votado
     const firstPending = others.findIndex(p => !votoMap[p.id])
     setIndex(firstPending === -1 ? others.length : firstPending)
   }, [votacaoAberta, profile?.id, ciclo?.id])
 
   useEffect(() => {
     setLoadingVotos(true)
+    // Reseta estado local ao trocar de ciclo
+    setVotos({})
+    setIndex(0)
+    setRating(0)
+    setRerating(null)
     loadVotos(null).catch(console.error).finally(() => setLoadingVotos(false))
   }, [loadVotos])
 
@@ -91,7 +94,7 @@ export default function Votacao() {
         <div className="px-4 pt-10 pb-4">
           <h1 className="text-2xl font-black text-text-main uppercase tracking-widest">Votação</h1>
           <p className="text-text-muted text-sm mt-0.5">Avalie seus colegas</p>
-          {isAdmin && <AdminVoteToggle aberta={votacaoAberta} onToggle={() => setVotacaoAberta(!votacaoAberta)} />}
+          {isAdmin && <AdminReabrirButton onReabrir={reabrirVotacao} />}
         </div>
         <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
           <div className="w-20 h-20 rounded-full bg-card flex items-center justify-center mb-4">
@@ -106,68 +109,69 @@ export default function Votacao() {
     )
   }
 
-  if (done) {
-    // Tela de reavaliação de um jogador específico
-    if (rerating) {
-      return (
-        <div className="min-h-full bg-background flex flex-col">
-          <div className="px-4 pt-10 pb-2 flex items-center gap-3">
-            <button onClick={() => { setRerating(null); setReratingStars(0) }} className="text-text-muted active:scale-90">
-              ←
-            </button>
-            <h1 className="text-2xl font-black text-text-main uppercase tracking-widest">Reavaliar</h1>
-          </div>
+  // Tela de reavaliação de um jogador específico
+  if (rerating) {
+    return (
+      <div className="min-h-full bg-background flex flex-col">
+        <div className="px-4 pt-10 pb-2 flex items-center gap-3">
+          <button onClick={() => { setRerating(null); setReratingStars(0) }} className="text-text-muted active:scale-90">
+            ←
+          </button>
+          <h1 className="text-2xl font-black text-text-main uppercase tracking-widest">Reavaliar</h1>
+        </div>
 
-          <div className="mx-4 mt-4 bg-card rounded-3xl p-6 flex flex-col items-center">
-            <div className="w-28 h-28 rounded-full bg-elevated flex items-center justify-center overflow-hidden mb-4 ring-2 ring-border">
-              {rerating.foto_url
-                ? <img src={rerating.foto_url} alt={rerating.nome} className="w-full h-full object-contain" />
-                : <span className="text-6xl">👤</span>}
-            </div>
-            <p className="text-text-main font-black text-2xl text-center">{rerating.nome}</p>
-            <p className="text-text-muted text-xs mt-1">Avaliação atual: {votos[rerating.id]} ⭐</p>
+        <div className="mx-4 mt-4 bg-card rounded-3xl p-6 flex flex-col items-center">
+          <div className="w-28 h-28 rounded-full bg-elevated flex items-center justify-center overflow-hidden mb-4 ring-2 ring-border">
+            {rerating.foto_url
+              ? <img src={rerating.foto_url} alt={rerating.nome} className="w-full h-full object-contain" />
+              : <span className="text-6xl">👤</span>}
           </div>
+          <p className="text-text-main font-black text-2xl text-center">{rerating.nome}</p>
+          <p className="text-text-muted text-xs mt-1">Avaliação atual: {votos[rerating.id]} ⭐</p>
+        </div>
 
-          <div className="flex flex-col items-center mt-6 px-4">
-            <p className="text-text-muted text-xs font-semibold uppercase tracking-wider mb-4">
-              {reratingStars === 0 ? 'Toque para reavaliar' : RATING_LABEL[reratingStars]}
-            </p>
-            <div className="flex gap-3">
-              {[1,2,3,4,5].map(s => (
-                <button key={s} onClick={() => setReratingStars(s)} className="active:scale-90 transition-transform">
-                  <Star size={40} className={cn('transition-colors', s <= reratingStars ? 'text-secondary fill-secondary' : 'text-border')} />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="px-4 mt-6 pb-6">
-            <button
-              onClick={() => {
-                if (!reratingStars || !ciclo?.id) return
-                setVotos(v => ({ ...v, [rerating.id]: reratingStars }))
-                saveVoto(ciclo.id, profile.id, rerating.id, reratingStars).catch(console.error)
-                setRerating(null)
-                setReratingStars(0)
-              }}
-              disabled={reratingStars === 0}
-              className="w-full bg-primary text-black font-bold py-4 rounded-2xl disabled:opacity-30 active:scale-95 transition-transform"
-            >
-              Confirmar avaliação ✓
-            </button>
+        <div className="flex flex-col items-center mt-6 px-4">
+          <p className="text-text-muted text-xs font-semibold uppercase tracking-wider mb-4">
+            {reratingStars === 0 ? 'Toque para reavaliar' : RATING_LABEL[reratingStars]}
+          </p>
+          <div className="flex gap-3">
+            {[1,2,3,4,5].map(s => (
+              <button key={s} onClick={() => setReratingStars(s)} className="active:scale-90 transition-transform">
+                <Star size={40} className={cn('transition-colors', s <= reratingStars ? 'text-secondary fill-secondary' : 'text-border')} />
+              </button>
+            ))}
           </div>
         </div>
-      )
-    }
 
+        <div className="px-4 mt-6 pb-6">
+          <button
+            onClick={() => {
+              if (!reratingStars || !ciclo?.id) return
+              setVotos(v => ({ ...v, [rerating.id]: reratingStars }))
+              saveVoto(ciclo.id, profile.id, rerating.id, reratingStars).catch(console.error)
+              setRerating(null)
+              setReratingStars(0)
+            }}
+            disabled={reratingStars === 0}
+            className="w-full bg-primary text-black font-bold py-4 rounded-2xl disabled:opacity-30 active:scale-95 transition-transform"
+          >
+            Confirmar avaliação ✓
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Lista de votos dados (sempre visível quando votação aberta e todos avaliados)
+  if (done) {
     return (
       <div className="min-h-full bg-background">
         <div className="px-4 pt-10 pb-4">
           <h1 className="text-2xl font-black text-text-main uppercase tracking-widest">Votação</h1>
-          {isAdmin && <AdminVoteToggle aberta={votacaoAberta} onToggle={() => setVotacaoAberta(!votacaoAberta)} />}
+          {isAdmin && <AdminReabrirButton onReabrir={reabrirVotacao} />}
         </div>
         <div className="flex flex-col items-center px-4 pb-8">
-          <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mb-4 mt-8">
+          <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mb-4 mt-2">
             <span className="text-4xl">✅</span>
           </div>
           <p className="text-text-main font-black text-xl">Votação concluída!</p>
@@ -196,6 +200,7 @@ export default function Votacao() {
     )
   }
 
+  // Fluxo de votação (ainda tem jogadores pendentes)
   return (
     <div className="min-h-full bg-background flex flex-col">
       {/* Header */}
@@ -204,7 +209,7 @@ export default function Votacao() {
         <p className="text-text-muted text-sm mt-0.5">
           {index + 1} de {players.length} jogadores
         </p>
-        {isAdmin && <AdminVoteToggle aberta={votacaoAberta} onToggle={() => setVotacaoAberta(!votacaoAberta)} />}
+        {isAdmin && <AdminReabrirButton onReabrir={reabrirVotacao} />}
       </div>
 
       {/* Barra de progresso */}
@@ -289,19 +294,14 @@ const RATING_LABEL = {
   5: '⭐⭐⭐⭐⭐ Excepcional',
 }
 
-function AdminVoteToggle({ aberta, onToggle }) {
+function AdminReabrirButton({ onReabrir }) {
   return (
     <button
-      onClick={onToggle}
-      className={cn(
-        'mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm active:scale-95 transition-transform',
-        aberta
-          ? 'bg-danger/10 text-danger border border-danger/20'
-          : 'bg-primary text-black'
-      )}
+      onClick={onReabrir}
+      className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm active:scale-95 transition-transform bg-primary text-black"
     >
-      <Vote size={14} />
-      {aberta ? 'Fechar votação' : 'Abrir votação'}
+      <RefreshCw size={14} />
+      Reabrir votação
     </button>
   )
 }
