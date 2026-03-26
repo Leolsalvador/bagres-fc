@@ -18,6 +18,8 @@ export default function Votacao() {
   const [votos, setVotos]     = useState({}) // { playerId: rating }
   const [animKey, setAnimKey] = useState(0)
   const [loadingVotos, setLoadingVotos] = useState(false)
+  const [rerating, setRerating] = useState(null) // player sendo reavaliado
+  const [reratingStars, setReratingStars] = useState(0)
 
   // Busca jogadores aprovados e votos já dados neste ciclo
   const loadVotos = useCallback(async (currentVotos) => {
@@ -105,32 +107,87 @@ export default function Votacao() {
   }
 
   if (done) {
+    // Tela de reavaliação de um jogador específico
+    if (rerating) {
+      return (
+        <div className="min-h-full bg-background flex flex-col">
+          <div className="px-4 pt-10 pb-2 flex items-center gap-3">
+            <button onClick={() => { setRerating(null); setReratingStars(0) }} className="text-text-muted active:scale-90">
+              ←
+            </button>
+            <h1 className="text-2xl font-black text-text-main uppercase tracking-widest">Reavaliar</h1>
+          </div>
+
+          <div className="mx-4 mt-4 bg-card rounded-3xl p-6 flex flex-col items-center">
+            <div className="w-28 h-28 rounded-full bg-elevated flex items-center justify-center overflow-hidden mb-4 ring-2 ring-border">
+              {rerating.foto_url
+                ? <img src={rerating.foto_url} alt={rerating.nome} className="w-full h-full object-contain" />
+                : <span className="text-6xl">👤</span>}
+            </div>
+            <p className="text-text-main font-black text-2xl text-center">{rerating.nome}</p>
+            <p className="text-text-muted text-xs mt-1">Avaliação atual: {votos[rerating.id]} ⭐</p>
+          </div>
+
+          <div className="flex flex-col items-center mt-6 px-4">
+            <p className="text-text-muted text-xs font-semibold uppercase tracking-wider mb-4">
+              {reratingStars === 0 ? 'Toque para reavaliar' : RATING_LABEL[reratingStars]}
+            </p>
+            <div className="flex gap-3">
+              {[1,2,3,4,5].map(s => (
+                <button key={s} onClick={() => setReratingStars(s)} className="active:scale-90 transition-transform">
+                  <Star size={40} className={cn('transition-colors', s <= reratingStars ? 'text-secondary fill-secondary' : 'text-border')} />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="px-4 mt-6 pb-6">
+            <button
+              onClick={() => {
+                if (!reratingStars || !ciclo?.id) return
+                setVotos(v => ({ ...v, [rerating.id]: reratingStars }))
+                saveVoto(ciclo.id, profile.id, rerating.id, reratingStars).catch(console.error)
+                setRerating(null)
+                setReratingStars(0)
+              }}
+              disabled={reratingStars === 0}
+              className="w-full bg-primary text-black font-bold py-4 rounded-2xl disabled:opacity-30 active:scale-95 transition-transform"
+            >
+              Confirmar avaliação ✓
+            </button>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="min-h-full bg-background">
         <div className="px-4 pt-10 pb-4">
           <h1 className="text-2xl font-black text-text-main uppercase tracking-widest">Votação</h1>
           {isAdmin && <AdminVoteToggle aberta={votacaoAberta} onToggle={() => setVotacaoAberta(!votacaoAberta)} />}
         </div>
-        <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-          <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mb-4">
+        <div className="flex flex-col items-center px-4 pb-8">
+          <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mb-4 mt-8">
             <span className="text-4xl">✅</span>
           </div>
           <p className="text-text-main font-black text-xl">Votação concluída!</p>
-          <p className="text-text-muted text-sm mt-2 max-w-xs">
-            Você avaliou {players.length} jogadores. Obrigado!
-          </p>
-          <div className="mt-8 w-full max-w-xs space-y-2">
+          <p className="text-text-muted text-sm mt-2 mb-6">Toque em alguém para reavaliar.</p>
+          <div className="w-full space-y-2">
             {Object.entries(votos).map(([id, r]) => {
               const p = players.find(pl => pl.id === id)
               return (
-                <div key={id} className="bg-card rounded-2xl px-4 py-3 flex items-center justify-between">
+                <button
+                  key={id}
+                  onClick={() => { setRerating(p); setReratingStars(r) }}
+                  className="w-full bg-card rounded-2xl px-4 py-3 flex items-center justify-between active:scale-95 transition-transform"
+                >
                   <p className="text-text-main text-sm font-semibold">{p?.nome}</p>
                   <div className="flex gap-0.5">
                     {[1,2,3,4,5].map(s => (
                       <Star key={s} size={14} className={s <= r ? 'text-secondary fill-secondary' : 'text-border'} />
                     ))}
                   </div>
-                </div>
+                </button>
               )
             })}
           </div>
