@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Star, ChevronDown, ChevronUp, Trophy, Flag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { fetchApprovedProfiles, fetchRodadasEncerradas } from '@/lib/api'
+import { supabase } from '@/lib/supabase'
 
 const SORT_OPTIONS = [
   { key: 'rating',       label: 'Rating'  },
@@ -22,6 +23,17 @@ export default function Home() {
       .then(([ps, hs]) => { setPlayers(ps); setHistory(hs) })
       .catch(console.error)
       .finally(() => setLoading(false))
+  }, [])
+
+  // Atualiza rating em tempo real quando alguém vota
+  useEffect(() => {
+    const channel = supabase
+      .channel('home-profiles')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
+        setPlayers(ps => ps.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p))
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
   }, [])
 
   const sorted = [...players].sort((a, b) => b[sort] - a[sort])
