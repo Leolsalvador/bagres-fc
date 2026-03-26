@@ -28,9 +28,10 @@ export default function IntroVideo() {
         src="/intro.mp4"
         autoPlay
         playsInline
-        muted={false}
+        muted
         className="w-full h-full object-cover"
         onEnded={dismiss}
+        onError={dismiss}
       />
       <button
         onClick={dismiss}
