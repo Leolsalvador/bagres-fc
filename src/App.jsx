@@ -12,6 +12,7 @@ import Home from '@/pages/Home'
 import Rodada from '@/pages/Rodada'
 import Votacao from '@/pages/Votacao'
 import Perfil from '@/pages/Perfil'
+import PerfilPublico from '@/pages/PerfilPublico'
 import Usuarios from '@/pages/admin/Usuarios'
 
 export default function App() {
@@ -34,6 +35,7 @@ export default function App() {
               <Route path="/rodada" element={<Rodada />} />
               <Route path="/votacao" element={<Votacao />} />
               <Route path="/perfil" element={<Perfil />} />
+              <Route path="/jogador/:id" element={<PerfilPublico />} />
 
               {/* Apenas admin */}
               <Route element={<AdminRoute />}>

@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useRodada } from '@/context/RodadaContext'
 import { cn } from '@/lib/utils'
@@ -14,6 +15,7 @@ export default function PlayerRodada() {
   const fila     = presencas.filter(p => p.posicao > 20 && p.posicao < 100).sort((a, b) => a.posicao - b.posicao)
   const goleiros = presencas.filter(p => p.posicao >= 100).sort((a, b) => a.posicao - b.posicao)
 
+  const navigate = useNavigate()
   const myPresenca = presencas.find(p => p.usuario_id === userId)
   const isGol      = profile?.posicao_campo === 'GOL'
   const isOnList   = myPresenca && myPresenca.posicao <= 20
@@ -138,7 +140,11 @@ export default function PlayerRodada() {
             Lista ({lista.length}/20)
           </p>
           {lista.map((p, i) => (
-            <div key={p.id} className="bg-card rounded-2xl p-3 flex items-center gap-3">
+            <button
+              key={p.id}
+              onClick={() => navigate(`/jogador/${p.usuario_id}`)}
+              className="w-full bg-card rounded-2xl p-3 flex items-center gap-3 active:scale-95 transition-transform text-left"
+            >
               <span className="text-text-muted text-xs font-bold w-6 text-center shrink-0">{i + 1}</span>
               <div className="w-9 h-9 rounded-full bg-elevated flex items-center justify-center overflow-hidden shrink-0">
                 {p.profiles?.foto_url
@@ -155,7 +161,7 @@ export default function PlayerRodada() {
               )}>
                 {p.status === 'pago' ? 'Pago' : 'Pendente'}
               </span>
-            </div>
+            </button>
           ))}
 
           {fila.length > 0 && (

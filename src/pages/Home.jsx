@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Star, ChevronDown, ChevronUp, Trophy, Flag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { fetchApprovedProfiles, fetchRodadasEncerradas } from '@/lib/api'
@@ -12,6 +13,7 @@ const SORT_OPTIONS = [
 ]
 
 export default function Home() {
+  const navigate = useNavigate()
   const [tab, setTab]         = useState('jogadores')
   const [sort, setSort]       = useState('rating')
   const [players, setPlayers] = useState([])
@@ -86,7 +88,7 @@ export default function Home() {
           </div>
 
           {sorted.map((p, i) => (
-            <PlayerCard key={p.id} player={p} rank={i + 1} sortKey={sort} />
+            <PlayerCard key={p.id} player={p} rank={i + 1} sortKey={sort} onClick={() => navigate(`/jogador/${p.id}`)} />
           ))}
         </div>
       )}
@@ -109,7 +111,7 @@ export default function Home() {
   )
 }
 
-function PlayerCard({ player: p, rank, sortKey }) {
+function PlayerCard({ player: p, rank, sortKey, onClick }) {
   const highlight = {
     rating:       `⭐ ${(p.rating ?? 0).toFixed(1)}`,
     gols:         `⚽ ${p.gols ?? 0} gols`,
@@ -118,7 +120,7 @@ function PlayerCard({ player: p, rank, sortKey }) {
   }
 
   return (
-    <div className="bg-card rounded-2xl p-3 mb-2.5 flex items-center gap-3">
+    <button onClick={onClick} className="w-full bg-card rounded-2xl p-3 mb-2.5 flex items-center gap-3 active:scale-95 transition-transform text-left">
       <span className={cn(
         'text-xs font-black w-6 text-center shrink-0',
         rank === 1 ? 'text-secondary' : rank === 2 ? 'text-text-muted' : rank === 3 ? 'text-orange-400' : 'text-text-muted'
@@ -149,7 +151,7 @@ function PlayerCard({ player: p, rank, sortKey }) {
           {sortKey !== 'rating' ? highlight[sortKey] : ''}
         </p>
       </div>
-    </div>
+    </button>
   )
 }
 

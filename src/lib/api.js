@@ -69,6 +69,17 @@ export async function fetchAdminProfiles() {
   return data ?? []
 }
 
+export async function fetchProfileById(id) {
+  if (USE_MOCK) return [...mockPlayers, mockCurrentUser].find(p => p.id === id) ?? null
+  const { data, error } = await supabase
+    .from('profiles')
+    .select(PROFILE_FIELDS)
+    .eq('id', id)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
 export async function fetchApprovedProfiles() {
   if (USE_MOCK) return mockPlayers.filter(p => p.status === 'aprovado')
   const { data, error } = await supabase
