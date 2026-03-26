@@ -23,15 +23,11 @@ export default function Votacao() {
 
   // Busca jogadores aprovados e votos já dados neste ciclo
   const loadVotos = useCallback(async (currentVotos) => {
-    if (!votacaoAberta || !profile?.id) return
+    if (!profile?.id || !ciclo?.id) return
     const all = await fetchApprovedProfiles()
     const others = all.filter(p => p.id !== profile.id)
     setPlayers(others)
-    if (!ciclo?.id) return
-    const votoMap = currentVotos ?? (() => {
-      const m = {}
-      return m
-    })()
+    const votoMap = currentVotos ?? {}
     if (!currentVotos) {
       const existingVotos = await fetchMyVotos(ciclo.id, profile.id)
       existingVotos.forEach(v => { votoMap[v.avaliado_id] = v.nota })
@@ -39,7 +35,7 @@ export default function Votacao() {
     }
     const firstPending = others.findIndex(p => !votoMap[p.id])
     setIndex(firstPending === -1 ? others.length : firstPending)
-  }, [votacaoAberta, profile?.id, ciclo?.id])
+  }, [profile?.id, ciclo?.id])
 
   useEffect(() => {
     setLoadingVotos(true)
@@ -53,7 +49,7 @@ export default function Votacao() {
 
   // Realtime: detecta novo jogador aprovado e atualiza lista automaticamente
   useEffect(() => {
-    if (!votacaoAberta || !profile?.id) return
+    if (!votacaoAberta || !profile?.id || !ciclo?.id) return
     const channel = supabase
       .channel('votacao-profiles')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, () => {
@@ -64,7 +60,7 @@ export default function Votacao() {
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [votacaoAberta, profile?.id, loadVotos])
+  }, [votacaoAberta, profile?.id, ciclo?.id, loadVotos])
 
   const done = index >= players.length
   const current = players[index]
@@ -84,27 +80,6 @@ export default function Votacao() {
     return (
       <div className="min-h-full bg-background flex items-center justify-center">
         <p className="text-text-muted text-sm">Carregando votação...</p>
-      </div>
-    )
-  }
-
-  if (!votacaoAberta) {
-    return (
-      <div className="min-h-full bg-background">
-        <div className="px-4 pt-10 pb-4">
-          <h1 className="text-2xl font-black text-text-main uppercase tracking-widest">Votação</h1>
-          <p className="text-text-muted text-sm mt-0.5">Avalie seus colegas</p>
-          {isAdmin && <AdminReabrirButton onReabrir={reabrirVotacao} />}
-        </div>
-        <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-          <div className="w-20 h-20 rounded-full bg-card flex items-center justify-center mb-4">
-            <Star size={36} className="text-text-muted" />
-          </div>
-          <p className="text-text-main font-semibold">Votação não está aberta</p>
-          <p className="text-text-muted text-xs mt-2 max-w-xs">
-            O administrador abrirá a votação após o encerramento de uma rodada.
-          </p>
-        </div>
       </div>
     )
   }
@@ -162,8 +137,8 @@ export default function Votacao() {
     )
   }
 
-  // Lista de votos dados (sempre visível quando votação aberta e todos avaliados)
-  if (done) {
+  // Lista de votos dados — sempre visível se há votos, independente de votacaoAberta
+  if (done && Object.keys(votos).length > 0) {
     return (
       <div className="min-h-full bg-background">
         <div className="px-4 pt-10 pb-4">
@@ -195,6 +170,27 @@ export default function Votacao() {
               )
             })}
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!votacaoAberta) {
+    return (
+      <div className="min-h-full bg-background">
+        <div className="px-4 pt-10 pb-4">
+          <h1 className="text-2xl font-black text-text-main uppercase tracking-widest">Votação</h1>
+          <p className="text-text-muted text-sm mt-0.5">Avalie seus colegas</p>
+          {isAdmin && <AdminReabrirButton onReabrir={reabrirVotacao} />}
+        </div>
+        <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+          <div className="w-20 h-20 rounded-full bg-card flex items-center justify-center mb-4">
+            <Star size={36} className="text-text-muted" />
+          </div>
+          <p className="text-text-main font-semibold">Votação não está aberta</p>
+          <p className="text-text-muted text-xs mt-2 max-w-xs">
+            O administrador abrirá a votação após o encerramento de uma rodada.
+          </p>
         </div>
       </div>
     )
