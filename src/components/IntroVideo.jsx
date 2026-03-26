@@ -49,6 +49,16 @@ export default function IntroVideo() {
           <p className="text-white font-bold text-lg tracking-widest animate-pulse">TOQUE PARA COMEÇAR</p>
         </div>
       )}
+
+      {/* Botão pular — sempre visível após iniciar */}
+      {started && (
+        <button
+          onClick={e => { e.stopPropagation(); dismiss() }}
+          className="absolute bottom-8 right-6 px-4 py-2 rounded-full bg-black/50 text-white text-sm font-semibold border border-white/30 active:scale-95 transition-transform"
+        >
+          Pular
+        </button>
+      )}
     </div>
   )
 }
