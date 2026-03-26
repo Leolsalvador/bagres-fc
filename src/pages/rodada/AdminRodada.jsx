@@ -7,6 +7,7 @@ import { USE_MOCK } from '@/lib/mockData'
 import TeamsGrid from './TeamsGrid'
 import MatchSelector from './MatchSelector'
 import MatchScreen from './MatchScreen'
+import VotacaoRodada from './VotacaoRodada'
 
 const DEV_STATES = ['aguardando', 'aberta', 'sorteada', 'em_jogo', 'encerrada']
 
@@ -308,16 +309,15 @@ export default function AdminRodada() {
 
       {/* ── ENCERRADA ── */}
       {rodada.status === 'encerrada' && (
-        <div>
-          <div className="px-4 mb-2">
-            <button
-              onClick={createNovaRodada}
-              className="w-full bg-primary text-black font-bold py-3 rounded-2xl active:scale-95 transition-transform text-sm"
-            >
-              + Nova Rodada
-            </button>
-          </div>
+        <div className="px-4 pb-6 space-y-4">
+          <button
+            onClick={createNovaRodada}
+            className="w-full bg-primary text-black font-bold py-3 rounded-2xl active:scale-95 transition-transform text-sm"
+          >
+            + Nova Rodada
+          </button>
           <RoundSummary matchHistory={matchHistory} />
+          <VotacaoRodada lista={lista} />
         </div>
       )}
     </div>
@@ -441,7 +441,7 @@ function RoundSummary({ matchHistory }) {
   const totalGols = allEvents.filter(e => e.type === 'gol').length
 
   return (
-    <div className="px-4 pb-8 space-y-4">
+    <div className="space-y-4">
       {/* Banner */}
       <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 text-center">
         <p className="text-primary font-black text-lg">Rodada Encerrada ✓</p>

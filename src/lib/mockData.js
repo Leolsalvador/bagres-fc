@@ -98,8 +98,48 @@ export const mockRodadasHistory = [
 export const mockRodada = {
   id: 'mock-rodada-1',
   data_jogo: '2026-03-30',
-  status: 'aberta', // aguardando | aberta | sorteada | em_jogo | encerrada
+  status: 'encerrada', // aguardando | aberta | sorteada | em_jogo | encerrada
 }
+
+// ─── Histórico de partidas (mock para testar tela encerrada) ──
+export const mockMatchHistory = [
+  {
+    teamA: { nome: 'Time Azul' },
+    teamB: { nome: 'Time Vermelho' },
+    goalsA: 3, goalsB: 1, winner: 'A',
+    events: [
+      { type: 'gol',        player: { id: 'u01', nome: 'Carlos Silva' } },
+      { type: 'gol',        player: { id: 'u01', nome: 'Carlos Silva' } },
+      { type: 'gol',        player: { id: 'u03', nome: 'Pedro Oliveira' } },
+      { type: 'assistencia', player: { id: 'u02', nome: 'João Santos' } },
+      { type: 'gol',        player: { id: 'u04', nome: 'Lucas Costa' } },
+      { type: 'assistencia', player: { id: 'u02', nome: 'João Santos' } },
+    ],
+  },
+  {
+    teamA: { nome: 'Time Amarelo' },
+    teamB: { nome: 'Time Verde' },
+    goalsA: 2, goalsB: 2, winner: 'draw',
+    events: [
+      { type: 'gol',        player: { id: 'u05', nome: 'Gabriel Souza' } },
+      { type: 'gol',        player: { id: 'u05', nome: 'Gabriel Souza' } },
+      { type: 'assistencia', player: { id: 'u06', nome: 'Matheus Lima' } },
+      { type: 'gol',        player: { id: 'u07', nome: 'Rafael Ferreira' } },
+      { type: 'gol',        player: { id: 'u08', nome: 'André Rodrigues' } },
+    ],
+  },
+  {
+    teamA: { nome: 'Time Azul' },
+    teamB: { nome: 'Time Amarelo' },
+    goalsA: 1, goalsB: 2, winner: 'B',
+    events: [
+      { type: 'gol',        player: { id: 'u09', nome: 'Felipe Alves' } },
+      { type: 'gol',        player: { id: 'u05', nome: 'Gabriel Souza' } },
+      { type: 'gol',        player: { id: 'u01', nome: 'Carlos Silva' } },
+      { type: 'assistencia', player: { id: 'u02', nome: 'João Santos' } },
+    ],
+  },
+]
 
 // ─── Presenças (admin na posição 1 — comportamento esperado) ──
 // Lista: admin (pos 1) + u01–u11 (pos 2–12) = 12 confirmados

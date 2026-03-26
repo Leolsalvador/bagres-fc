@@ -1,7 +1,7 @@
 // src/lib/api.js — Todas as queries do Supabase
 import { supabase } from './supabase'
 import {
-  USE_MOCK,
+  USE_MOCK, mockMatchHistory,
   mockCurrentUser, mockPlayers, mockRodada, mockPresencas,
   mockRodadasHistory, mockCiclo,
 } from './mockData'
@@ -248,7 +248,7 @@ export async function savePartida(rodadaId, teams, result) {
 }
 
 export async function fetchMatchHistory(rodadaId) {
-  if (USE_MOCK) return []
+  if (USE_MOCK) return mockMatchHistory
   const { data, error } = await supabase
     .from('partidas')
     .select(`

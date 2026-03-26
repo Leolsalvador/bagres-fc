@@ -9,7 +9,7 @@ import {
 } from '@/lib/api'
 import { drawTeams } from '@/lib/teamDraw'
 import { supabase } from '@/lib/supabase'
-import { USE_MOCK, mockPresencas } from '@/lib/mockData'
+import { USE_MOCK, mockPresencas, mockRodada } from '@/lib/mockData'
 
 const RodadaContext = createContext(null)
 
@@ -19,6 +19,13 @@ export function RodadaProvider({ children }) {
   const [teams, setTeams]               = useState(null)
   const [matchHistory, setMatchHistory] = useState([])
   const [loading, setLoading]           = useState(true)
+
+  // ── Votação da Rodada ─────────────────────────────────────
+  const [votacaoRodadaAberta, setVotacaoRodadaAberta] = useState(
+    USE_MOCK && mockRodada.status === 'encerrada'
+  )
+  const [votosRodada, setVotosRodada] = useState({ melhor: {}, bagre: {} })
+  const [meuVotoRodada, setMeuVotoRodada] = useState({ melhor: null, bagre: null })
 
   // ── Busca inicial ────────────────────────────────────────
   const refresh = useCallback(async () => {
@@ -67,6 +74,10 @@ export function RodadaProvider({ children }) {
       setPresencas(mockPresencas)
       return
     }
+    if (status === 'encerrada') {
+      setVotacaoRodadaAberta(true)
+    }
+
     try {
       if (status === 'encerrada') {
         await finalizeRodada(rodada.id, matchHistory, presencas)
@@ -266,6 +277,16 @@ export function RodadaProvider({ children }) {
     }
   }
 
+  // ── Votação da Rodada ────────────────────────────────────
+  function votarRodada(novoVoto) {
+    setMeuVotoRodada(novoVoto)
+    setVotosRodada(prev => ({
+      melhor: { ...prev.melhor, [novoVoto.melhor]: (prev.melhor[novoVoto.melhor] ?? 0) + 1 },
+      bagre:  { ...prev.bagre,  [novoVoto.bagre]:  (prev.bagre[novoVoto.bagre]  ?? 0) + 1 },
+    }))
+    // TODO (real): salvar em votos_rodada no Supabase
+  }
+
   // ── Resultado de partida ─────────────────────────────────
   async function addMatchResult(result) {
     setMatchHistory(h => [...h, result])
@@ -281,6 +302,7 @@ export function RodadaProvider({ children }) {
       joinList, leaveList, confirmPayment,
       validatePayment, rejectPayment, removeFromList,
       performDraw, addMatchResult,
+      votacaoRodadaAberta, votosRodada, meuVotoRodada, votarRodada,
       refresh,
     }}>
       {children}

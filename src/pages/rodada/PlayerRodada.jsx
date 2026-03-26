@@ -2,6 +2,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useRodada } from '@/context/RodadaContext'
 import { cn } from '@/lib/utils'
 import TeamsGrid from './TeamsGrid'
+import VotacaoRodada from './VotacaoRodada'
 import { CalendarDays, Trophy } from 'lucide-react'
 
 export default function PlayerRodada() {
@@ -206,7 +207,10 @@ export default function PlayerRodada() {
 
       {/* ── ENCERRADA ── */}
       {rodada.status === 'encerrada' && (
-        <PlayerRoundSummary matchHistory={matchHistory} teams={teams} />
+        <div className="px-4 pb-6">
+          <PlayerRoundSummary matchHistory={matchHistory} teams={teams} />
+          <VotacaoRodada lista={lista} />
+        </div>
       )}
     </div>
   )
@@ -244,7 +248,7 @@ function PlayerRoundSummary({ matchHistory, teams }) {
   )[0]
 
   return (
-    <div className="px-4 pb-8 space-y-4">
+    <div className="space-y-4">
       <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 text-center">
         <Trophy size={28} className="text-primary mx-auto mb-2" />
         <p className="text-primary font-black text-lg">Rodada Encerrada!</p>
