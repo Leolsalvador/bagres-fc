@@ -375,6 +375,37 @@ export async function fetchMyVotos(cicloId, votanteId) {
   return data ?? []
 }
 
+// ─── VOTOS DA RODADA (melhor / bagre) ───────────────────────
+export async function fetchMeuVotoRodada(rodadaId, votanteId) {
+  if (USE_MOCK) return null
+  const { data, error } = await supabase
+    .from('votos_rodada')
+    .select('melhor_id, bagre_id')
+    .eq('rodada_id', rodadaId)
+    .eq('votante_id', votanteId)
+    .maybeSingle()
+  if (error) throw error
+  return data // null se ainda não votou
+}
+
+export async function fetchVotosRodada(rodadaId) {
+  if (USE_MOCK) return []
+  const { data, error } = await supabase
+    .from('votos_rodada')
+    .select('melhor_id, bagre_id')
+    .eq('rodada_id', rodadaId)
+  if (error) throw error
+  return data ?? []
+}
+
+export async function saveVotoRodada(rodadaId, votanteId, melhorId, bagreId) {
+  if (USE_MOCK) return
+  const { error } = await supabase
+    .from('votos_rodada')
+    .upsert({ rodada_id: rodadaId, votante_id: votanteId, melhor_id: melhorId, bagre_id: bagreId })
+  if (error) throw error
+}
+
 // ─── HISTÓRICO DE RODADAS (Home) ────────────────────────────
 export async function fetchRodadasEncerradas() {
   if (USE_MOCK) return mockRodadasHistory
