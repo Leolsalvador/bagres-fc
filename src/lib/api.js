@@ -346,8 +346,21 @@ export async function saveVoto(cicloId, votanteId, avaliadoId, nota) {
     .from('votos')
     .upsert({ ciclo_id: cicloId, votante_id: votanteId, avaliado_id: avaliadoId, nota })
   if (error) throw error
-  // Recalcula rating do avaliado
-  await supabase.rpc('recalculate_rating', { player_id: avaliadoId })
+
+  // Tenta recalcular via RPC; se falhar, calcula e salva direto
+  const { error: rpcError } = await supabase.rpc('recalculate_rating', { player_id: avaliadoId })
+  if (rpcError) {
+    console.error('recalculate_rating RPC error:', rpcError)
+    // Fallback: calcula a média dos votos e salva direto
+    const { data: votos } = await supabase
+      .from('votos')
+      .select('nota')
+      .eq('avaliado_id', avaliadoId)
+    if (votos?.length) {
+      const avg = votos.reduce((s, v) => s + v.nota, 0) / votos.length
+      await supabase.from('profiles').update({ rating: Math.round(avg * 100) / 100 }).eq('id', avaliadoId)
+    }
+  }
 }
 
 export async function fetchMyVotos(cicloId, votanteId) {
