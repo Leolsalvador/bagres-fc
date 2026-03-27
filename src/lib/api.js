@@ -356,7 +356,7 @@ export async function updateCiclo(cicloId, aberta) {
 export async function saveVoto(cicloId, votanteId, avaliadoId, nota) {
   const { error } = await supabase
     .from('votos')
-    .upsert({ ciclo_id: cicloId, votante_id: votanteId, avaliado_id: avaliadoId, nota })
+    .upsert({ ciclo_id: cicloId, votante_id: votanteId, avaliado_id: avaliadoId, nota }, { onConflict: 'ciclo_id,votante_id,avaliado_id' })
   if (error) throw error
 
   // Tenta recalcular via RPC; se falhar, calcula e salva direto
@@ -413,7 +413,7 @@ export async function saveVotoRodada(rodadaId, votanteId, melhorId, bagreId) {
   if (USE_MOCK) return
   const { error } = await supabase
     .from('votos_rodada')
-    .upsert({ rodada_id: rodadaId, votante_id: votanteId, melhor_id: melhorId, bagre_id: bagreId })
+    .upsert({ rodada_id: rodadaId, votante_id: votanteId, melhor_id: melhorId, bagre_id: bagreId }, { onConflict: 'rodada_id,votante_id' })
   if (error) throw error
 }
 
