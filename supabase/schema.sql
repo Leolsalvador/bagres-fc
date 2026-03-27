@@ -219,6 +219,8 @@ alter publication supabase_realtime add table public.partidas;
 
 create policy "Usuário insere próprio voto" on public.votos
   for insert with check (auth.uid() = votante_id);
+create policy "Usuário atualiza próprio voto" on public.votos
+  for update using (auth.uid() = votante_id);
 create policy "Usuário lê próprio voto" on public.votos
   for select using (auth.uid() = votante_id);
 create policy "Admin lê todos os votos" on public.votos
