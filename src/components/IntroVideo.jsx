@@ -54,7 +54,7 @@ export default function IntroVideo() {
       {started && (
         <button
           onClick={e => { e.stopPropagation(); dismiss() }}
-          className="absolute bottom-8 right-6 px-4 py-2 rounded-full bg-black/50 text-white text-sm font-semibold border border-white/30 active:scale-95 transition-transform"
+          className="absolute bottom-24 right-6 px-4 py-2 rounded-full bg-black/50 text-white text-sm font-semibold border border-white/30 active:scale-95 transition-transform"
         >
           Pular
         </button>
