@@ -55,9 +55,9 @@ export default function FeedPost() {
   }
 
   return (
-    <div className="min-h-full bg-background pb-2">
+    <div className="flex flex-col bg-background" style={{ height: 'calc(100dvh - 64px)' }}>
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-10 pb-3">
+      <div className="flex-shrink-0 flex items-center gap-3 px-4 pt-10 pb-3">
         <button onClick={() => navigate(-1)} className="text-text-muted active:scale-90 transition-transform">
           <ArrowLeft size={22} />
         </button>
@@ -66,7 +66,7 @@ export default function FeedPost() {
 
       {/* Post preview — compact landscape crop */}
       {post && (
-        <div className="mx-4 mb-4 bg-card rounded-2xl overflow-hidden">
+        <div className="flex-shrink-0 mx-4 mb-4 bg-card rounded-2xl overflow-hidden">
           <div className="w-full h-48 bg-background">
             <img
               src={post.imagem_url}
@@ -86,8 +86,8 @@ export default function FeedPost() {
         </div>
       )}
 
-      {/* Comments */}
-      <div className="flex flex-col gap-3 px-4 pb-4">
+      {/* Comments — scrollable area */}
+      <div className="flex-1 overflow-y-auto flex flex-col gap-3 px-4 py-4">
         {comentarios.length === 0 && (
           <p className="text-text-muted text-sm text-center py-6">
             Nenhum comentário ainda. Seja o primeiro!
@@ -107,8 +107,8 @@ export default function FeedPost() {
         ))}
       </div>
 
-      {/* Sticky comment input */}
-      <div className="sticky bottom-16 left-0 right-0 flex items-center gap-2 px-4 py-3 bg-[#111827] border-t border-[#1F2937]">
+      {/* Comment input — fixed at bottom */}
+      <div className="flex-shrink-0 flex items-center gap-2 px-4 py-3 bg-[#111827] border-t border-[#1F2937]">
         <input
           value={texto}
           onChange={e => setTexto(e.target.value)}
