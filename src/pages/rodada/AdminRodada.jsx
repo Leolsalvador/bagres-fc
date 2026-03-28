@@ -33,7 +33,7 @@ const STATUS_COLOR = {
 export default function AdminRodada() {
   const {
     rodada, presencas, teams, matchHistory, loading,
-    setStatus, closeList, setTeams, setMatchHistory,
+    setStatus, closeList, clearPresencas, setTeams, setMatchHistory,
     validatePayment, rejectPayment, removeFromList,
     joinList, leaveList, addGuest,
     performDraw, addMatchResult, createNovaRodada,
@@ -286,6 +286,7 @@ export default function AdminRodada() {
         <MontagemListaModal
           presencas={presencas}
           onAdd={player => joinList(player.id, player)}
+          onClear={clearPresencas}
           onClose={() => setMontagemModal(false)}
         />
       )}

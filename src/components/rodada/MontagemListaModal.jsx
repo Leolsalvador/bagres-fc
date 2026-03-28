@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from 'react'
-import { X, Search, Plus, Check } from 'lucide-react'
+import { X, Search, Plus, Check, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { fetchApprovedProfiles } from '@/lib/api'
 
-export default function MontagemListaModal({ presencas, onAdd, onClose }) {
-  const [players, setPlayers]   = useState([])
-  const [search, setSearch]     = useState('')
-  const [adding, setAdding]     = useState(null) // id do jogador sendo adicionado
+export default function MontagemListaModal({ presencas, onAdd, onClear, onClose }) {
+  const [players, setPlayers]       = useState([])
+  const [search, setSearch]         = useState('')
+  const [adding, setAdding]         = useState(null)
+  const [confirmClear, setConfirmClear] = useState(false)
 
   useEffect(() => {
     fetchApprovedProfiles().then(setPlayers).catch(console.error)
@@ -37,9 +38,35 @@ export default function MontagemListaModal({ presencas, onAdd, onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
           <h2 className="text-text-main font-bold text-lg">Montar lista</h2>
-          <button onClick={onClose} className="text-text-muted active:scale-90 transition-transform">
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-3">
+            {confirmClear ? (
+              <div className="flex items-center gap-2">
+                <span className="text-text-muted text-xs">Limpar tudo?</span>
+                <button
+                  onClick={() => { onClear(); setConfirmClear(false) }}
+                  className="text-xs font-bold text-danger bg-danger/10 px-3 py-1 rounded-lg active:scale-90 transition-transform"
+                >
+                  Sim
+                </button>
+                <button
+                  onClick={() => setConfirmClear(false)}
+                  className="text-xs font-bold text-text-muted bg-elevated px-3 py-1 rounded-lg active:scale-90 transition-transform"
+                >
+                  Não
+                </button>
+              </div>
+            ) : presencas.length > 0 ? (
+              <button
+                onClick={() => setConfirmClear(true)}
+                className="flex items-center gap-1.5 text-danger text-xs font-semibold active:scale-90 transition-transform"
+              >
+                <Trash2 size={13} /> Limpar lista
+              </button>
+            ) : null}
+            <button onClick={onClose} className="text-text-muted active:scale-90 transition-transform">
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Busca */}

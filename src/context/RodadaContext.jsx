@@ -111,6 +111,16 @@ export function RodadaProvider({ children }) {
     }
   }
 
+  async function clearPresencas() {
+    if (!rodada) return
+    setPresencas([])
+    try {
+      await deleteAllPresencas(rodada.id)
+    } catch (err) {
+      console.error('Erro ao limpar lista:', err)
+    }
+  }
+
   async function createNovaRodada() {
     try {
       const r = await createRodada()
@@ -315,7 +325,7 @@ export function RodadaProvider({ children }) {
     <RodadaContext.Provider value={{
       rodada, presencas, teams, matchHistory, loading,
       setTeams, setMatchHistory,
-      setStatus, closeList, createNovaRodada,
+      setStatus, closeList, clearPresencas, createNovaRodada,
       joinList, leaveList, addGuest, confirmPayment,
       validatePayment, rejectPayment, removeFromList,
       performDraw, addMatchResult,
