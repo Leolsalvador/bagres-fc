@@ -9,6 +9,7 @@ import MatchSelector from './MatchSelector'
 import MatchScreen from './MatchScreen'
 import VotacaoRodada from './VotacaoRodada'
 import AddGuestModal from '@/components/rodada/AddGuestModal'
+import MontagemListaModal from '@/components/rodada/MontagemListaModal'
 
 const DEV_STATES = ['aguardando', 'aberta', 'sorteada', 'em_jogo', 'encerrada']
 
@@ -43,6 +44,7 @@ export default function AdminRodada() {
   const [waitingQueue, setWaitingQueue]   = useState([0, 1, 2, 3])
   const [onFieldWinner, setOnFieldWinner] = useState(null)
   const [guestModal, setGuestModal]       = useState(false)
+  const [montagemModal, setMontagemModal] = useState(false)
 
   const lista     = presencas.filter(p => p.posicao <= 20).sort((a, b) => a.posicao - b.posicao)
   const fila      = presencas.filter(p => p.posicao > 20 && p.posicao < 100).sort((a, b) => a.posicao - b.posicao)
@@ -157,7 +159,7 @@ export default function AdminRodada() {
       {rodada.status === 'aberta' && (
         <div className="px-4 space-y-4 pb-6">
           {/* Ações do admin */}
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             {!presencas.some(p => p.usuario_id === profile?.id) ? (
               <button
                 onClick={() => joinList(profile.id, profile)}
@@ -180,8 +182,14 @@ export default function AdminRodada() {
               <UserPlus size={15} /> Convidado
             </button>
             <button
+              onClick={() => setMontagemModal(true)}
+              className="flex-1 flex items-center justify-center gap-2 border border-border text-text-muted py-3 rounded-xl text-sm font-semibold active:scale-95 transition-transform"
+            >
+              <LogIn size={15} /> Montar lista
+            </button>
+            <button
               onClick={closeList}
-              className="flex-1 flex items-center justify-center gap-2 border border-danger/40 text-danger py-3 rounded-xl text-sm font-semibold active:scale-95 transition-transform"
+              className="w-full flex items-center justify-center gap-2 border border-danger/40 text-danger py-3 rounded-xl text-sm font-semibold active:scale-95 transition-transform"
             >
               <XCircle size={15} /> Fechar lista
             </button>
@@ -271,6 +279,14 @@ export default function AdminRodada() {
         <AddGuestModal
           onClose={() => setGuestModal(false)}
           onConfirm={data => addGuest(profile.id, profile, data)}
+        />
+      )}
+
+      {montagemModal && (
+        <MontagemListaModal
+          presencas={presencas}
+          onAdd={player => joinList(player.id, player)}
+          onClose={() => setMontagemModal(false)}
         />
       )}
 
