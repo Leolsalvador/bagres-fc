@@ -17,7 +17,7 @@ export default function AddGuestModal({ onClose, onConfirm }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-end justify-center z-50 px-4 pb-6">
+    <div className="fixed inset-0 bg-black/60 flex items-end justify-center z-[60] px-4 pb-6">
       <div className="bg-card rounded-2xl w-full max-w-sm p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-text-main font-bold text-lg">Adicionar convidado</h2>
