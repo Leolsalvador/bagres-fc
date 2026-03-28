@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import {
   fetchLatestRodada, createRodada,
-  fetchPresencas, insertPresenca, deletePresenca, updatePresenca,
+  fetchPresencas, insertPresenca, insertGuestPresenca, deletePresenca, updatePresenca,
   updateRodadaStatus, finalizeRodada, deleteAllPresencas,
   saveDrawToDb, fetchTeams,
   savePartida, fetchMatchHistory,
@@ -166,6 +166,42 @@ export function RodadaProvider({ children }) {
     }
   }
 
+  async function addGuest(userId, profile, { nome, posicao_campo, rating }) {
+    if (!rodada) return
+
+    const lista = presencas.filter(p => p.posicao <= 20)
+    const fila  = presencas.filter(p => p.posicao > 20 && p.posicao < 100)
+    const isQueue  = lista.length >= 20
+    const maxLista = lista.length > 0 ? Math.max(...lista.map(p => p.posicao)) : 0
+    const maxFila  = fila.length  > 0 ? Math.max(...fila.map(p => p.posicao))  : 20
+    const posicao  = isQueue ? maxFila + 1 : maxLista + 1
+    const status   = isQueue ? 'espera' : 'confirmado'
+
+    const temp = {
+      id: `temp-guest-${Date.now()}`,
+      rodada_id: rodada.id,
+      usuario_id: null,
+      posicao,
+      status,
+      is_guest: true,
+      guest_nome: nome,
+      guest_posicao_campo: posicao_campo,
+      guest_rating: rating,
+      convidado_por: userId,
+      profiles: null,
+      inviter: { id: userId, nome: profile.nome },
+    }
+    setPresencas(ps => [...ps, temp])
+
+    try {
+      const real = await insertGuestPresenca(rodada.id, { nome, posicao_campo, rating }, posicao, userId)
+      setPresencas(ps => ps.map(p => p.id === temp.id ? real : p))
+    } catch (err) {
+      setPresencas(ps => ps.filter(p => p.id !== temp.id))
+      console.error('Erro ao adicionar convidado:', err)
+    }
+  }
+
   async function leaveList(userId) {
     const removed = presencas.find(p => p.usuario_id === userId)
     if (!removed) return
@@ -280,7 +316,7 @@ export function RodadaProvider({ children }) {
       rodada, presencas, teams, matchHistory, loading,
       setTeams, setMatchHistory,
       setStatus, closeList, createNovaRodada,
-      joinList, leaveList, confirmPayment,
+      joinList, leaveList, addGuest, confirmPayment,
       validatePayment, rejectPayment, removeFromList,
       performDraw, addMatchResult,
       votacaoRodadaAberta,

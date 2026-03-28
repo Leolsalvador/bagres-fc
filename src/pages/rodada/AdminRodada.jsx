@@ -333,7 +333,9 @@ const POSICAO_COLOR = {
 }
 
 function PlayerRow({ presenca, position, isQueue = false, isGol = false, onValidate, onReject, onRemove }) {
-  const { profiles: p, status } = presenca
+  const { profiles: p, status, is_guest, guest_nome, guest_posicao_campo, inviter } = presenca
+  const nome         = is_guest ? guest_nome : p?.nome
+  const posicaoCampo = is_guest ? guest_posicao_campo : p?.posicao_campo
 
   return (
     <div className="bg-card rounded-2xl p-3">
@@ -346,22 +348,31 @@ function PlayerRow({ presenca, position, isQueue = false, isGol = false, onValid
         {/* Avatar */}
         <div className="w-9 h-9 rounded-full bg-elevated flex items-center justify-center overflow-hidden shrink-0">
           {p?.foto_url
-            ? <img src={p.foto_url} alt={p.nome} className="w-full h-full object-contain" />
+            ? <img src={p.foto_url} alt={nome} className="w-full h-full object-contain" />
             : <span className="text-sm">👤</span>}
         </div>
 
-        {/* Nome */}
-        <p className="text-text-main text-sm font-semibold flex-1 truncate">{p?.nome}</p>
+        {/* Nome + subtexto convidado */}
+        <div className="flex-1 min-w-0">
+          <p className="text-text-main text-sm font-semibold truncate">{nome}</p>
+          {is_guest && (
+            <p className="text-text-muted text-[10px] truncate">Convidado de {inviter?.nome ?? '—'}</p>
+          )}
+        </div>
 
-        {/* Badge posição */}
-        {p?.posicao_campo && (
-          <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0', POSICAO_COLOR[p.posicao_campo])}>
-            {p.posicao_campo}
+        {/* Badge convidado ou posição */}
+        {is_guest ? (
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 bg-blue-500/15 text-blue-400">
+            Convidado
           </span>
-        )}
+        ) : posicaoCampo ? (
+          <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0', POSICAO_COLOR[posicaoCampo])}>
+            {posicaoCampo}
+          </span>
+        ) : null}
 
-        {/* Status badge */}
-        {!isQueue && !isGol && (
+        {/* Status badge pagamento */}
+        {!isQueue && !isGol && !is_guest && (
           <span className={cn(
             'text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0',
             status === 'pago'
@@ -375,10 +386,10 @@ function PlayerRow({ presenca, position, isQueue = false, isGol = false, onValid
 
       {/* Ações */}
       <div className="flex gap-2 mt-2 ml-10">
-        {!isQueue && status !== 'pago' && (
+        {!isQueue && !is_guest && status !== 'pago' && (
           <ActionBtn onClick={onValidate} color="green" icon={<Check size={13} />} label="Validar pagamento" />
         )}
-        {!isQueue && status === 'pago' && (
+        {!isQueue && !is_guest && status === 'pago' && (
           <ActionBtn onClick={onReject} color="yellow" icon={<X size={13} />} label="Rejeitar pagamento" />
         )}
         <ActionBtn onClick={onRemove} color="red" icon={<Trash2 size={13} />} label="Remover" />

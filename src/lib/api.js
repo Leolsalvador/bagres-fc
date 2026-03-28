@@ -125,11 +125,15 @@ export async function updateRodadaStatus(rodadaId, status, extra = {}) {
 }
 
 // ─── PRESENÇAS ──────────────────────────────────────────────
+// Após adicionar coluna convidado_por (2ª FK para profiles), é necessário
+// disambiguar ambas as FKs explicitamente no select.
+const PRESENCA_SELECT = `*, profiles!usuario_id(${PROFILE_FIELDS}), inviter:profiles!convidado_por(id, nome)`
+
 export async function fetchPresencas(rodadaId) {
   if (USE_MOCK) return mockPresencas
   const { data, error } = await supabase
     .from('presencas')
-    .select(`*, profiles(${PROFILE_FIELDS})`)
+    .select(PRESENCA_SELECT)
     .eq('rodada_id', rodadaId)
     .order('posicao')
   if (error) throw error
@@ -140,7 +144,28 @@ export async function insertPresenca(rodadaId, usuarioId, posicao, status) {
   const { data, error } = await supabase
     .from('presencas')
     .insert({ rodada_id: rodadaId, usuario_id: usuarioId, posicao, status })
-    .select(`*, profiles(${PROFILE_FIELDS})`)
+    .select(PRESENCA_SELECT)
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function insertGuestPresenca(rodadaId, { nome, posicao_campo, rating }, posicao, convidadoPor) {
+  const status = posicao <= 20 ? 'confirmado' : 'espera'
+  const { data, error } = await supabase
+    .from('presencas')
+    .insert({
+      rodada_id:            rodadaId,
+      usuario_id:           null,
+      posicao,
+      status,
+      is_guest:             true,
+      guest_nome:           nome,
+      guest_posicao_campo:  posicao_campo,
+      guest_rating:         rating,
+      convidado_por:        convidadoPor,
+    })
+    .select(PRESENCA_SELECT)
     .single()
   if (error) throw error
   return data

@@ -1,15 +1,18 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useRodada } from '@/context/RodadaContext'
 import { cn } from '@/lib/utils'
 import TeamsGrid from './TeamsGrid'
 import VotacaoRodada from './VotacaoRodada'
-import { CalendarDays, Trophy } from 'lucide-react'
+import AddGuestModal from '@/components/rodada/AddGuestModal'
+import { CalendarDays, Trophy, UserPlus, Trash2 } from 'lucide-react'
 
 export default function PlayerRodada() {
-  const { rodada, presencas, teams, matchHistory, loading, joinList, leaveList, confirmPayment } = useRodada()
+  const { rodada, presencas, teams, matchHistory, loading, joinList, leaveList, addGuest, removeFromList, confirmPayment } = useRodada()
   const { profile } = useAuth()
   const userId = profile?.id
+  const [guestModal, setGuestModal] = useState(false)
 
   const lista    = presencas.filter(p => p.posicao <= 20).sort((a, b) => a.posicao - b.posicao)
   const fila     = presencas.filter(p => p.posicao > 20 && p.posicao < 100).sort((a, b) => a.posicao - b.posicao)
@@ -79,6 +82,12 @@ export default function PlayerRodada() {
               >
                 {isGol ? 'Confirmar presença (Goleiro)' : lista.length < 20 ? 'Entrar na lista' : 'Entrar na fila de espera'}
               </button>
+              <button
+                onClick={() => setGuestModal(true)}
+                className="w-full flex items-center justify-center gap-2 border border-border text-text-muted font-semibold py-3 rounded-xl active:scale-95 transition-transform text-sm"
+              >
+                <UserPlus size={15} /> Adicionar convidado
+              </button>
             </div>
           )}
 
@@ -113,6 +122,12 @@ export default function PlayerRodada() {
                 </button>
               )}
               <button
+                onClick={() => setGuestModal(true)}
+                className="w-full flex items-center justify-center gap-2 border border-border text-text-muted font-semibold py-2.5 rounded-xl active:scale-95 transition-transform text-sm"
+              >
+                <UserPlus size={15} /> Adicionar convidado
+              </button>
+              <button
                 onClick={() => leaveList(userId)}
                 className="w-full border border-danger/30 text-danger text-sm font-semibold py-2.5 rounded-xl active:scale-95 transition-transform"
               >
@@ -140,44 +155,29 @@ export default function PlayerRodada() {
             Lista ({lista.length}/20)
           </p>
           {lista.map((p, i) => (
-            <button
+            <PresencaRow
               key={p.id}
-              onClick={() => navigate(`/jogador/${p.usuario_id}`)}
-              className="w-full bg-card rounded-2xl p-3 flex items-center gap-3 active:scale-95 transition-transform text-left"
-            >
-              <span className="text-text-muted text-xs font-bold w-6 text-center shrink-0">{i + 1}</span>
-              <div className="w-9 h-9 rounded-full bg-elevated flex items-center justify-center overflow-hidden shrink-0">
-                {p.profiles?.foto_url
-                  ? <img src={p.profiles.foto_url} alt={p.profiles.nome} className="w-full h-full object-contain" />
-                  : <span className="text-sm">👤</span>}
-              </div>
-              <p className={cn('text-sm font-semibold flex-1 truncate', p.usuario_id === userId ? 'text-primary' : 'text-text-main')}>
-                {p.profiles?.nome}
-                {p.usuario_id === userId && ' (você)'}
-              </p>
-              <span className={cn(
-                'text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0',
-                p.status === 'pago' ? 'bg-primary/15 text-primary' : 'bg-secondary/15 text-secondary'
-              )}>
-                {p.status === 'pago' ? 'Pago' : 'Pendente'}
-              </span>
-            </button>
+              presenca={p}
+              position={i + 1}
+              userId={userId}
+              onNavigate={() => !p.is_guest && navigate(`/jogador/${p.usuario_id}`)}
+              onRemoveGuest={p.is_guest && p.convidado_por === userId ? () => removeFromList(p.id) : null}
+            />
           ))}
 
           {fila.length > 0 && (
             <>
               <p className="text-text-muted text-xs font-semibold uppercase tracking-wider mt-2">Fila de espera</p>
               {fila.map((p, i) => (
-                <div key={p.id} className="bg-card rounded-2xl p-3 flex items-center gap-3 opacity-60">
-                  <span className="text-text-muted text-xs font-bold w-6 text-center shrink-0">{i + 1}º</span>
-                  <div className="w-9 h-9 rounded-full bg-elevated flex items-center justify-center shrink-0">
-                    <span className="text-sm">👤</span>
-                  </div>
-                  <p className={cn('text-sm font-semibold flex-1 truncate', p.usuario_id === userId ? 'text-secondary' : 'text-text-main')}>
-                    {p.profiles?.nome}
-                    {p.usuario_id === userId && ' (você)'}
-                  </p>
-                </div>
+                <PresencaRow
+                  key={p.id}
+                  presenca={p}
+                  position={`${i + 1}º`}
+                  userId={userId}
+                  isQueue
+                  onNavigate={() => !p.is_guest && navigate(`/jogador/${p.usuario_id}`)}
+                  onRemoveGuest={p.is_guest && p.convidado_por === userId ? () => removeFromList(p.id) : null}
+                />
               ))}
             </>
           )}
@@ -218,6 +218,64 @@ export default function PlayerRodada() {
           <VotacaoRodada lista={lista} />
         </div>
       )}
+
+      {guestModal && (
+        <AddGuestModal
+          onClose={() => setGuestModal(false)}
+          onConfirm={data => addGuest(userId, profile, data)}
+        />
+      )}
+    </div>
+  )
+}
+
+function PresencaRow({ presenca: p, position, userId, isQueue = false, onNavigate, onRemoveGuest }) {
+  const nome    = p.is_guest ? p.guest_nome : p.profiles?.nome
+  const isMe    = p.usuario_id === userId
+  const isMyGuest = p.is_guest && p.convidado_por === userId
+
+  return (
+    <div className="bg-card rounded-2xl p-3 space-y-1">
+      <div
+        className={cn('flex items-center gap-3', !p.is_guest && 'cursor-pointer active:scale-95 transition-transform')}
+        onClick={onNavigate}
+      >
+        <span className="text-text-muted text-xs font-bold w-6 text-center shrink-0">{position}</span>
+        <div className="w-9 h-9 rounded-full bg-elevated flex items-center justify-center overflow-hidden shrink-0">
+          {p.profiles?.foto_url
+            ? <img src={p.profiles.foto_url} alt={nome} className="w-full h-full object-contain" />
+            : <span className="text-sm">👤</span>}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className={cn('text-sm font-semibold truncate', isMe ? 'text-primary' : isMyGuest ? 'text-secondary' : 'text-text-main')}>
+            {nome}{isMe && ' (você)'}
+          </p>
+          {p.is_guest && (
+            <p className="text-text-muted text-[10px] truncate">Convidado de {p.inviter?.nome ?? '—'}</p>
+          )}
+        </div>
+        {p.is_guest && (
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 shrink-0">
+            Convidado
+          </span>
+        )}
+        {!isQueue && !p.is_guest && (
+          <span className={cn(
+            'text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0',
+            p.status === 'pago' ? 'bg-primary/15 text-primary' : 'bg-secondary/15 text-secondary'
+          )}>
+            {p.status === 'pago' ? 'Pago' : 'Pendente'}
+          </span>
+        )}
+        {onRemoveGuest && (
+          <button
+            onClick={e => { e.stopPropagation(); onRemoveGuest() }}
+            className="text-danger/60 hover:text-danger active:scale-90 transition-all shrink-0 p-1"
+          >
+            <Trash2 size={14} />
+          </button>
+        )}
+      </div>
     </div>
   )
 }
