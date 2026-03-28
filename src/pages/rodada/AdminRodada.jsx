@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, X, Trash2, Shuffle, Play, LogIn, XCircle, ChevronRight } from 'lucide-react'
+import { Check, X, Trash2, Shuffle, Play, LogIn, XCircle, ChevronRight, UserPlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useRodada } from '@/context/RodadaContext'
 import { useAuth } from '@/hooks/useAuth'
@@ -8,6 +8,7 @@ import TeamsGrid from './TeamsGrid'
 import MatchSelector from './MatchSelector'
 import MatchScreen from './MatchScreen'
 import VotacaoRodada from './VotacaoRodada'
+import AddGuestModal from '@/components/rodada/AddGuestModal'
 
 const DEV_STATES = ['aguardando', 'aberta', 'sorteada', 'em_jogo', 'encerrada']
 
@@ -33,7 +34,7 @@ export default function AdminRodada() {
     rodada, presencas, teams, matchHistory, loading,
     setStatus, closeList, setTeams, setMatchHistory,
     validatePayment, rejectPayment, removeFromList,
-    joinList, leaveList,
+    joinList, leaveList, addGuest,
     performDraw, addMatchResult, createNovaRodada,
   } = useRodada()
   const { profile } = useAuth()
@@ -41,6 +42,7 @@ export default function AdminRodada() {
   const [currentMatch, setCurrentMatch]   = useState(null)
   const [waitingQueue, setWaitingQueue]   = useState([0, 1, 2, 3])
   const [onFieldWinner, setOnFieldWinner] = useState(null)
+  const [guestModal, setGuestModal]       = useState(false)
 
   const lista     = presencas.filter(p => p.posicao <= 20).sort((a, b) => a.posicao - b.posicao)
   const fila      = presencas.filter(p => p.posicao > 20 && p.posicao < 100).sort((a, b) => a.posicao - b.posicao)
@@ -172,6 +174,12 @@ export default function AdminRodada() {
               </button>
             )}
             <button
+              onClick={() => setGuestModal(true)}
+              className="flex-1 flex items-center justify-center gap-2 border border-border text-text-muted py-3 rounded-xl text-sm font-semibold active:scale-95 transition-transform"
+            >
+              <UserPlus size={15} /> Convidado
+            </button>
+            <button
               onClick={closeList}
               className="flex-1 flex items-center justify-center gap-2 border border-danger/40 text-danger py-3 rounded-xl text-sm font-semibold active:scale-95 transition-transform"
             >
@@ -257,6 +265,13 @@ export default function AdminRodada() {
             {lista.length < 20 ? `Sortear (faltam ${20 - lista.length})` : 'Sortear Times'}
           </button>
         </div>
+      )}
+
+      {guestModal && (
+        <AddGuestModal
+          onClose={() => setGuestModal(false)}
+          onConfirm={data => addGuest(profile.id, profile, data)}
+        />
       )}
 
       {/* ── SORTEADA ── */}
