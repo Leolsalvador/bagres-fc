@@ -33,10 +33,10 @@ export default function MontagemListaModal({ presencas, onAdd, onClear, onClose 
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex flex-col justify-end z-[60]">
-      <div className="bg-card rounded-t-2xl w-full max-h-[80vh] flex flex-col">
+    <div className="fixed inset-0 bg-card flex flex-col z-[60]">
+      <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
+        <div className="flex items-center justify-between px-5 pt-10 pb-3 shrink-0">
           <h2 className="text-text-main font-bold text-lg">Montar lista</h2>
           <div className="flex items-center gap-3">
             {confirmClear ? (
