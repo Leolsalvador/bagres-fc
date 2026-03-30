@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import {
   fetchLatestRodada, createRodada,
   fetchPresencas, insertPresenca, insertGuestPresenca, deletePresenca, updatePresenca,
@@ -19,8 +19,47 @@ export function RodadaProvider({ children }) {
   const [teams, setTeams]               = useState(null)
   const [matchHistory, setMatchHistory] = useState([])
   const [loading, setLoading]           = useState(true)
+  const autoPromotingRef                = useRef(false)
 
   const votacaoRodadaAberta = rodada?.status === 'encerrada'
+
+  // ── Auto-promoção: preenche spots disponíveis da fila ────
+  useEffect(() => {
+    if (autoPromotingRef.current || !rodada || rodada.status !== 'aberta') return
+
+    const lista = presencas.filter(p => p.posicao <= 20)
+    const fila  = presencas.filter(p => p.posicao > 20 && p.posicao < 100).sort((a, b) => a.posicao - b.posicao)
+    const spots = 20 - lista.length
+    if (spots <= 0 || fila.length === 0) return
+
+    const takenPos = new Set(lista.map(p => p.posicao))
+    const freePositions = []
+    for (let i = 1; i <= 20 && freePositions.length < Math.min(spots, fila.length); i++) {
+      if (!takenPos.has(i)) freePositions.push(i)
+    }
+    const toPromote = fila.slice(0, freePositions.length)
+    if (toPromote.length === 0) return
+
+    autoPromotingRef.current = true
+
+    setPresencas(ps => ps.map(p => {
+      const idx = toPromote.findIndex(pr => pr.id === p.id)
+      return idx !== -1 ? { ...p, posicao: freePositions[idx], status: 'confirmado' } : p
+    }))
+
+    toPromote.reduce((chain, promoted, i) =>
+      chain.then(() => updatePresenca(promoted.id, { posicao: freePositions[i], status: 'confirmado' })),
+      Promise.resolve()
+    )
+      .then(() => { autoPromotingRef.current = false })
+      .catch(err => { console.error('Erro ao promover da fila:', err); autoPromotingRef.current = false })
+
+    sendPushNotification({
+      title: '🎉 Você entrou na lista!',
+      body: 'Uma vaga abriu e você foi promovido da fila de espera.',
+      userIds: toPromote.map(p => p.usuario_id).filter(Boolean),
+    }).catch(console.error)
+  }, [presencas, rodada])
 
   // ── Busca inicial ────────────────────────────────────────
   const refresh = useCallback(async () => {
@@ -297,6 +336,29 @@ export function RodadaProvider({ children }) {
     setPresencas(updated)
   }
 
+  async function promotePlayerFromQueue(presencaId) {
+    const promoted = presencas.find(p => p.id === presencaId)
+    if (!promoted || promoted.posicao <= 20) return
+
+    const lista = presencas.filter(p => p.posicao <= 20)
+    if (lista.length >= 20) return
+
+    const takenPos = new Set(lista.map(p => p.posicao))
+    let freePos = null
+    for (let i = 1; i <= 20; i++) {
+      if (!takenPos.has(i)) { freePos = i; break }
+    }
+    if (freePos === null) return
+
+    setPresencas(ps => ps.map(p => p.id === presencaId ? { ...p, posicao: freePos, status: 'confirmado' } : p))
+    updatePresenca(presencaId, { posicao: freePos, status: 'confirmado' }).catch(console.error)
+    sendPushNotification({
+      title: '🎉 Você entrou na lista!',
+      body: 'O admin promoveu você da fila de espera.',
+      userIds: [promoted.usuario_id].filter(Boolean),
+    }).catch(console.error)
+  }
+
   // ── Sorteio ──────────────────────────────────────────────
   async function performDraw() {
     if (!rodada) return
@@ -330,7 +392,7 @@ export function RodadaProvider({ children }) {
       setTeams, setMatchHistory,
       setStatus, closeList, clearPresencas, createNovaRodada,
       joinList, leaveList, addGuest, confirmPayment,
-      validatePayment, rejectPayment, removeFromList,
+      validatePayment, rejectPayment, removeFromList, promotePlayerFromQueue,
       performDraw, addMatchResult,
       votacaoRodadaAberta,
       refresh,

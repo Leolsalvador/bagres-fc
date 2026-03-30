@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, X, Trash2, Shuffle, Play, LogIn, XCircle, ChevronRight, UserPlus } from 'lucide-react'
+import { Check, X, Trash2, Shuffle, Play, LogIn, XCircle, ChevronRight, UserPlus, ArrowUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useRodada } from '@/context/RodadaContext'
 import { useAuth } from '@/hooks/useAuth'
@@ -34,7 +34,7 @@ export default function AdminRodada() {
   const {
     rodada, presencas, teams, matchHistory, loading,
     setStatus, closeList, clearPresencas, setTeams, setMatchHistory,
-    validatePayment, rejectPayment, removeFromList,
+    validatePayment, rejectPayment, removeFromList, promotePlayerFromQueue,
     joinList, leaveList, addGuest,
     performDraw, addMatchResult, createNovaRodada,
   } = useRodada()
@@ -240,6 +240,8 @@ export default function AdminRodada() {
                   presenca={p}
                   position={`${i + 1}º fila`}
                   isQueue
+                  canPromote={lista.length < 20}
+                  onPromote={() => promotePlayerFromQueue(p.id)}
                   onRemove={() => removeFromList(p.id)}
                 />
               ))}
@@ -364,7 +366,7 @@ const POSICAO_COLOR = {
   CORINGA: 'bg-primary/20 text-primary',
 }
 
-function PlayerRow({ presenca, position, isQueue = false, isGol = false, onValidate, onReject, onRemove }) {
+function PlayerRow({ presenca, position, isQueue = false, isGol = false, canPromote = false, onValidate, onReject, onPromote, onRemove }) {
   const { profiles: p, status, is_guest, guest_nome, guest_posicao_campo, inviter } = presenca
   const nome         = is_guest ? guest_nome : p?.nome
   const posicaoCampo = is_guest ? guest_posicao_campo : p?.posicao_campo
@@ -423,6 +425,9 @@ function PlayerRow({ presenca, position, isQueue = false, isGol = false, onValid
         )}
         {!isQueue && !is_guest && status === 'pago' && (
           <ActionBtn onClick={onReject} color="yellow" icon={<X size={13} />} label="Rejeitar pagamento" />
+        )}
+        {isQueue && canPromote && (
+          <ActionBtn onClick={onPromote} color="green" icon={<ArrowUp size={13} />} label="Promover" />
         )}
         <ActionBtn onClick={onRemove} color="red" icon={<Trash2 size={13} />} label="Remover" />
       </div>
