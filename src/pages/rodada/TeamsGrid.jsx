@@ -80,7 +80,7 @@ function TeamDetailModal({ team, colorClass, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60" onClick={onClose}>
       <div
-        className="bg-card rounded-t-3xl p-6 space-y-4 max-h-[80vh] overflow-y-auto"
+        className="bg-card rounded-t-3xl p-6 pb-20 space-y-4 max-h-[80vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
