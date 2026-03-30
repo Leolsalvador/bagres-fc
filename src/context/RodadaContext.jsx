@@ -225,8 +225,9 @@ export function RodadaProvider({ children }) {
         updated = updated.map(p =>
           p.id === promoted.id ? { ...p, posicao: removed.posicao, status: 'confirmado' } : p
         )
-        deletePresenca(removed.id).catch(console.error)
-        updatePresenca(promoted.id, { posicao: removed.posicao, status: 'confirmado' }).catch(console.error)
+        deletePresenca(removed.id)
+          .then(() => updatePresenca(promoted.id, { posicao: removed.posicao, status: 'confirmado' }))
+          .catch(console.error)
         sendPushNotification({
           title: '🎉 Você entrou na lista!',
           body: 'Uma vaga abriu e você foi promovido da fila de espera.',
@@ -277,19 +278,21 @@ export function RodadaProvider({ children }) {
     let updated = presencas.filter(p => p.id !== presencaId)
     const fila = updated.filter(p => p.posicao > 20 && p.posicao < 100).sort((a, b) => a.posicao - b.posicao)
 
-    deletePresenca(presencaId).catch(console.error)
-
     if (fila.length > 0) {
       const promoted = fila[0]
       updated = updated.map(p =>
         p.id === promoted.id ? { ...p, posicao: removed.posicao, status: 'confirmado' } : p
       )
-      updatePresenca(promoted.id, { posicao: removed.posicao, status: 'confirmado' }).catch(console.error)
+      deletePresenca(presencaId)
+        .then(() => updatePresenca(promoted.id, { posicao: removed.posicao, status: 'confirmado' }))
+        .catch(console.error)
       sendPushNotification({
         title: '🎉 Você entrou na lista!',
         body: 'Uma vaga abriu e você foi promovido da fila de espera.',
         userIds: [promoted.usuario_id],
       }).catch(console.error)
+    } else {
+      deletePresenca(presencaId).catch(console.error)
     }
     setPresencas(updated)
   }
