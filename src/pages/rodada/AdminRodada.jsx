@@ -10,6 +10,7 @@ import MatchScreen from './MatchScreen'
 import VotacaoRodada from './VotacaoRodada'
 import AddGuestModal from '@/components/rodada/AddGuestModal'
 import MontagemListaModal from '@/components/rodada/MontagemListaModal'
+import MontagemManualModal from '@/components/rodada/MontagemManualModal'
 
 const DEV_STATES = ['aguardando', 'aberta', 'sorteada', 'em_jogo', 'encerrada']
 
@@ -36,15 +37,16 @@ export default function AdminRodada() {
     setStatus, closeList, clearPresencas, setTeams, setMatchHistory,
     validatePayment, rejectPayment, removeFromList, promotePlayerFromQueue,
     joinList, leaveList, addGuest,
-    performDraw, addMatchResult, createNovaRodada,
+    performDraw, applyManualTeams, addMatchResult, createNovaRodada,
   } = useRodada()
   const { profile } = useAuth()
 
   const [currentMatch, setCurrentMatch]   = useState(null)
   const [waitingQueue, setWaitingQueue]   = useState([0, 1, 2, 3])
   const [onFieldWinner, setOnFieldWinner] = useState(null)
-  const [guestModal, setGuestModal]       = useState(false)
-  const [montagemModal, setMontagemModal] = useState(false)
+  const [guestModal, setGuestModal]             = useState(false)
+  const [montagemModal, setMontagemModal]       = useState(false)
+  const [montagemManual, setMontagemManual]     = useState(false)
 
   const lista     = presencas.filter(p => p.posicao <= 20).sort((a, b) => a.posicao - b.posicao)
   const fila      = presencas.filter(p => p.posicao > 20 && p.posicao < 100).sort((a, b) => a.posicao - b.posicao)
@@ -265,15 +267,23 @@ export default function AdminRodada() {
             />
           ))}
 
-          {/* Botão sortear */}
-          <button
-            onClick={handleDraw}
-            disabled={lista.length < 20}
-            className="w-full flex items-center justify-center gap-2 bg-primary text-black font-bold py-4 rounded-2xl disabled:opacity-40 active:scale-95 transition-transform mt-2"
-          >
-            <Shuffle size={18} />
-            {lista.length < 20 ? `Sortear (faltam ${20 - lista.length})` : 'Sortear Times'}
-          </button>
+          {/* Botões sortear / montar manual */}
+          <div className="flex gap-3 mt-2">
+            <button
+              onClick={handleDraw}
+              disabled={lista.length < 20}
+              className="flex-1 flex items-center justify-center gap-2 bg-primary text-black font-bold py-4 rounded-2xl disabled:opacity-40 active:scale-95 transition-transform"
+            >
+              <Shuffle size={18} />
+              {lista.length < 20 ? `Sortear (faltam ${20 - lista.length})` : 'Sortear Times'}
+            </button>
+            <button
+              onClick={() => setMontagemManual(true)}
+              className="flex items-center justify-center gap-2 border border-border text-text-muted px-4 py-4 rounded-2xl text-sm font-semibold active:scale-95 transition-transform"
+            >
+              <LogIn size={16} /> Manual
+            </button>
+          </div>
         </div>
       )}
 
@@ -293,6 +303,14 @@ export default function AdminRodada() {
         />
       )}
 
+      {montagemManual && (
+        <MontagemManualModal
+          presencas={presencas}
+          onConfirm={teams => applyManualTeams(teams)}
+          onClose={() => setMontagemManual(false)}
+        />
+      )}
+
       {/* ── SORTEADA ── */}
       {rodada.status === 'sorteada' && (
         <div className="px-4 pb-6 space-y-4">
@@ -306,6 +324,12 @@ export default function AdminRodada() {
               className="flex-1 flex items-center justify-center gap-2 border border-border text-text-muted py-3 rounded-xl text-sm font-semibold active:scale-95 transition-transform"
             >
               <Shuffle size={15} /> Ressortear
+            </button>
+            <button
+              onClick={() => setMontagemManual(true)}
+              className="flex-1 flex items-center justify-center gap-2 border border-border text-text-muted py-3 rounded-xl text-sm font-semibold active:scale-95 transition-transform"
+            >
+              <LogIn size={15} /> Manual
             </button>
             <button
               onClick={() => setStatus('em_jogo')}

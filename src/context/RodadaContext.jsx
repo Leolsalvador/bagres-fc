@@ -379,6 +379,18 @@ export function RodadaProvider({ children }) {
     }
   }
 
+  async function applyManualTeams(teams) {
+    setTeams(teams)
+    if (rodada.status !== 'sorteada') setStatus('sorteada')
+    try {
+      const saved = await saveDrawToDb(rodada.id, teams)
+      setTeams(saved)
+      sendPushNotification({ title: '🎲 Times definidos!', body: 'Os times foram definidos pelo admin.' }).catch(() => {})
+    } catch (err) {
+      console.error('Erro ao salvar times manuais:', err)
+    }
+  }
+
   // ── Resultado de partida ─────────────────────────────────
   async function addMatchResult(result) {
     setMatchHistory(h => [...h, result])
@@ -393,7 +405,7 @@ export function RodadaProvider({ children }) {
       setStatus, closeList, clearPresencas, createNovaRodada,
       joinList, leaveList, addGuest, confirmPayment,
       validatePayment, rejectPayment, removeFromList, promotePlayerFromQueue,
-      performDraw, addMatchResult,
+      performDraw, applyManualTeams, addMatchResult,
       votacaoRodadaAberta,
       refresh,
     }}>
