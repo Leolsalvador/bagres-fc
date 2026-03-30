@@ -6,7 +6,24 @@
  */
 export function drawTeams(players) {
   const outfield = players.filter(p => p.posicao_campo !== 'GOL')
-  const sorted   = [...outfield].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+
+  // Agrupa por rating e embaralha dentro de cada grupo para aleatoriedade no ressortear
+  const groups = {}
+  outfield.forEach(p => {
+    const r = p.rating ?? 0
+    if (!groups[r]) groups[r] = []
+    groups[r].push(p)
+  })
+  Object.values(groups).forEach(g => {
+    for (let i = g.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [g[i], g[j]] = [g[j], g[i]]
+    }
+  })
+  const sorted = Object.keys(groups)
+    .map(Number)
+    .sort((a, b) => b - a)
+    .flatMap(r => groups[r])
   const teams    = [[], [], [], []]
   const order    = [0, 1, 2, 3, 3, 2, 1, 0, 0, 1, 2, 3, 3, 2, 1, 0, 0, 1, 2, 3]
 
