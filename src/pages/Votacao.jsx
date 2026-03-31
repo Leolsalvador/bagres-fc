@@ -103,10 +103,24 @@ export default function Votacao() {
   // Ciclo reservado para admins — jogadores comuns veem mensagem de bloqueio
   if (ciclo?.apenas_admins && !isAdmin) {
     return (
-      <div className="min-h-full bg-background flex flex-col items-center justify-center px-6 text-center gap-4">
-        <ShieldAlert size={48} className="text-danger opacity-60" />
-        <p className="text-text-main font-black text-xl">Votação Admin</p>
-        <p className="text-text-muted text-sm">Esta rodada de votos é exclusiva para os admins.<br />Aguarde a próxima votação.</p>
+      <div className="min-h-full bg-background flex flex-col">
+        <div className="px-4 pt-10 pb-4">
+          <h1 className="text-2xl font-black text-text-main uppercase tracking-widest">Votação</h1>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-5 pb-20">
+          <div className="w-20 h-20 rounded-full bg-danger/10 flex items-center justify-center">
+            <ShieldAlert size={36} className="text-danger" />
+          </div>
+          <div>
+            <p className="text-text-main font-black text-xl mb-2">Votação Admin</p>
+            <p className="text-text-muted text-sm leading-relaxed">
+              Esta rodada de votos é exclusiva para os admins.<br />Aguarde a próxima votação aberta a todos.
+            </p>
+          </div>
+          <div className="bg-card rounded-2xl px-5 py-3 border border-border">
+            <p className="text-text-muted text-xs">🔒 Restrito até o admin reabrir</p>
+          </div>
+        </div>
       </div>
     )
   }
@@ -172,8 +186,16 @@ export default function Votacao() {
           <h1 className="text-2xl font-black text-text-main uppercase tracking-widest">Votação</h1>
           {isAdmin && <AdminReabrirButton onReabrir={reabrirVotacao} />}
         </div>
+
+        {/* Card admin — sempre no topo para admins */}
         {isAdmin && (
-          <div className="px-4 mb-2">
+          <div className="px-4 mb-4 space-y-2">
+            {ciclo?.apenas_admins && (
+              <div className="flex items-center gap-2 bg-danger/10 border border-danger/20 rounded-xl px-4 py-2">
+                <ShieldAlert size={14} className="text-danger shrink-0" />
+                <p className="text-danger text-xs font-bold">Modo Admin Ativo — só admins estão votando</p>
+              </div>
+            )}
             <AdminVotarCard
               confirming={confirmAdmin} loading={clearingAdmin}
               onRequest={() => setConfirmAdmin(true)}
@@ -182,6 +204,7 @@ export default function Votacao() {
             />
           </div>
         )}
+
         <div className="flex flex-col items-center px-4 pb-8">
           <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mb-4 mt-2">
             <span className="text-4xl">✅</span>
@@ -222,7 +245,13 @@ export default function Votacao() {
           {isAdmin && <AdminReabrirButton onReabrir={reabrirVotacao} />}
         </div>
         {isAdmin && (
-          <div className="px-4">
+          <div className="px-4 space-y-2">
+            {ciclo?.apenas_admins && (
+              <div className="flex items-center gap-2 bg-danger/10 border border-danger/20 rounded-xl px-4 py-2">
+                <ShieldAlert size={14} className="text-danger shrink-0" />
+                <p className="text-danger text-xs font-bold">Modo Admin Ativo — só admins estão votando</p>
+              </div>
+            )}
             <AdminVotarCard
               confirming={confirmAdmin} loading={clearingAdmin}
               onRequest={() => setConfirmAdmin(true)}
@@ -247,9 +276,15 @@ export default function Votacao() {
         {isAdmin && <AdminReabrirButton onReabrir={reabrirVotacao} />}
       </div>
 
-      {/* Votos Admin */}
+      {/* Card admin — sempre no topo para admins */}
       {isAdmin && (
-        <div className="px-4 mb-2">
+        <div className="px-4 mb-2 space-y-2">
+          {ciclo?.apenas_admins && (
+            <div className="flex items-center gap-2 bg-danger/10 border border-danger/20 rounded-xl px-4 py-2">
+              <ShieldAlert size={14} className="text-danger shrink-0" />
+              <p className="text-danger text-xs font-bold">Modo Admin Ativo — só admins estão votando</p>
+            </div>
+          )}
           <AdminVotarCard
             confirming={confirmAdmin} loading={clearingAdmin}
             onRequest={() => setConfirmAdmin(true)}
