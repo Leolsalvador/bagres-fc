@@ -406,12 +406,10 @@ export async function clearVotosCiclo(cicloId) {
   if (error) throw error
 }
 
-export async function resetAllRatings() {
+// Apaga TODOS os votos de TODOS os ciclos e zera os ratings (via RPC security definer)
+export async function clearAllVotosAndRatings() {
   if (USE_MOCK) return
-  const { error } = await supabase
-    .from('profiles')
-    .update({ rating: 0 })
-    .eq('status', 'aprovado')
+  const { error } = await supabase.rpc('clear_all_votos_and_ratings')
   if (error) throw error
 }
 
