@@ -34,6 +34,12 @@ export default function Home() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
         setPlayers(ps => ps.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p))
       })
+      // Escuta reset de votos admin — refaz fetch completo para garantir ratings zerados
+      .on('broadcast', { event: 'ratings-reset' }, () => {
+        fetchApprovedProfiles()
+          .then(ps => setPlayers(ps))
+          .catch(console.error)
+      })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [])
