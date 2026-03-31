@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { fetchLatestCiclo, createCiclo, clearVotosCiclo, sendPushNotification } from '@/lib/api'
+import { fetchLatestCiclo, createCiclo, clearVotosCiclo, resetAllRatings, sendPushNotification } from '@/lib/api'
 
 const VotacaoContext = createContext(null)
 
@@ -30,6 +30,7 @@ export function VotacaoProvider({ children }) {
   async function votarComoAdmin() {
     try {
       if (ciclo?.id) await clearVotosCiclo(ciclo.id)
+      await resetAllRatings()
       const novo = await createCiclo(true) // apenas_admins = true
       setCiclo(novo)
       setVotacaoAbertaState(true)

@@ -406,6 +406,15 @@ export async function clearVotosCiclo(cicloId) {
   if (error) throw error
 }
 
+export async function resetAllRatings() {
+  if (USE_MOCK) return
+  const { error } = await supabase
+    .from('profiles')
+    .update({ rating: 0 })
+    .eq('status', 'aprovado')
+  if (error) throw error
+}
+
 export async function fetchMyVotos(cicloId, votanteId) {
   if (USE_MOCK) return []
   const { data, error } = await supabase
