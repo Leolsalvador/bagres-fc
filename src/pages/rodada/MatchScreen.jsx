@@ -34,6 +34,8 @@ function formatTime(s) {
   return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
 }
 
+const STORAGE_KEY = 'match-state'
+
 export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatch, onEnd, onBack }) {
   const duration = isFirstMatch ? DURATION_FIRST : DURATION_NORMAL
   const [seconds, setSeconds]         = useState(duration)
@@ -49,38 +51,123 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatc
   const [drawNotice, setDrawNotice]     = useState(!!match.autoStart)
   const [pendingGoal, setPendingGoal]   = useState(null) // { player, team: 'A'|'B' }
 
-  const intervalRef = useRef(null)
+  const intervalRef  = useRef(null)
+  const wakeLockRef  = useRef(null)
+  const endTimeRef   = useRef(null) // timestamp absoluto em que o timer chega a 0
+
+  // ── Wake Lock: impede a tela de apagar enquanto roda ─────────
+  async function requestWakeLock() {
+    if (!('wakeLock' in navigator)) return
+    try {
+      wakeLockRef.current = await navigator.wakeLock.request('screen')
+    } catch (_) {}
+  }
+  function releaseWakeLock() {
+    wakeLockRef.current?.release()
+    wakeLockRef.current = null
+  }
+
+  // ── Restaura estado salvo ao montar ──────────────────────────
+  useEffect(() => {
+    const raw = sessionStorage.getItem(STORAGE_KEY)
+    if (!raw) return
+    try {
+      const s = JSON.parse(raw)
+      if (s.teamA !== match.teamA.nome || s.teamB !== match.teamB.nome) {
+        sessionStorage.removeItem(STORAGE_KEY); return
+      }
+      setGoalsA(s.goalsA ?? 0)
+      setGoalsB(s.goalsB ?? 0)
+      setEvents(s.events ?? [])
+      if (s.isRunning && s.endTimestamp) {
+        const remaining = Math.round((s.endTimestamp - Date.now()) / 1000)
+        if (remaining > 0) {
+          endTimeRef.current = s.endTimestamp
+          setSeconds(remaining)
+          setIsRunning(true)
+        } else {
+          setSeconds(0); setTimeExpired(true)
+        }
+      } else {
+        setSeconds(s.seconds ?? duration)
+        setTimeExpired(s.timeExpired ?? false)
+      }
+    } catch (_) { sessionStorage.removeItem(STORAGE_KEY) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ── Persiste estado a cada tick ───────────────────────────────
+  useEffect(() => {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+      teamA: match.teamA.nome, teamB: match.teamB.nome,
+      seconds, isRunning,
+      endTimestamp: endTimeRef.current,
+      timeExpired, goalsA, goalsB, events,
+    }))
+  }, [seconds, isRunning, timeExpired, goalsA, goalsB, events, match])
+
+  // ── Timer com timestamp absoluto ─────────────────────────────
+  useEffect(() => {
+    if (isRunning) {
+      requestWakeLock()
+      intervalRef.current = setInterval(() => {
+        const remaining = Math.round((endTimeRef.current - Date.now()) / 1000)
+        if (remaining <= 0) {
+          clearInterval(intervalRef.current)
+          setIsRunning(false)
+          setTimeExpired(true)
+          setSeconds(0)
+          releaseWakeLock()
+          playBeep()
+        } else {
+          setSeconds(remaining)
+        }
+      }, 500)
+    } else {
+      clearInterval(intervalRef.current)
+      releaseWakeLock()
+    }
+    return () => { clearInterval(intervalRef.current); releaseWakeLock() }
+  }, [isRunning])
+
+  // ── Reativa wake lock e corrige timer ao voltar do background ─
+  useEffect(() => {
+    function onVisibilityChange() {
+      if (document.visibilityState !== 'visible' || !isRunning) return
+      requestWakeLock()
+      if (endTimeRef.current) {
+        const remaining = Math.round((endTimeRef.current - Date.now()) / 1000)
+        if (remaining <= 0) {
+          setSeconds(0); setIsRunning(false); setTimeExpired(true); playBeep()
+        } else {
+          setSeconds(remaining)
+        }
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+  }, [isRunning])
+
+  const colorA = TEAM_COLORS[teamAIndex % TEAM_COLORS.length]
+  const colorB = TEAM_COLORS[teamBIndex % TEAM_COLORS.length]
 
   useEffect(() => {
     if (!drawNotice) return
     const t = setTimeout(() => setDrawNotice(false), 2500)
     return () => clearTimeout(t)
   }, [drawNotice])
-  const colorA = TEAM_COLORS[teamAIndex % TEAM_COLORS.length]
-  const colorB = TEAM_COLORS[teamBIndex % TEAM_COLORS.length]
 
-  useEffect(() => {
-    if (isRunning) {
-      intervalRef.current = setInterval(() => {
-        setSeconds(s => {
-          if (s <= 1) {
-            clearInterval(intervalRef.current)
-            setIsRunning(false)
-            setTimeExpired(true)
-            playBeep()
-            return 0
-          }
-          return s - 1
-        })
-      }, 1000)
-    } else {
-      clearInterval(intervalRef.current)
+  function handleToggleTimer() {
+    if (!isRunning) {
+      // Inicia ou retoma: define o timestamp de fim
+      endTimeRef.current = Date.now() + seconds * 1000
     }
-    return () => clearInterval(intervalRef.current)
-  }, [isRunning])
+    setIsRunning(r => !r)
+  }
 
   function resetTimer() {
     setIsRunning(false)
+    endTimeRef.current = null
     setSeconds(duration)
     setTimeExpired(false)
   }
@@ -109,6 +196,7 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatc
   }
 
   function handleEndGame() {
+    sessionStorage.removeItem(STORAGE_KEY)
     const winner = goalsA > goalsB ? 'A' : goalsB > goalsA ? 'B' : 'draw'
     onEnd({ teamA: match.teamA, teamB: match.teamB, goalsA, goalsB, winner, events })
   }
@@ -147,7 +235,7 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatc
           {formatTime(seconds)}
         </span>
         <button
-          onClick={() => setIsRunning(r => !r)}
+          onClick={handleToggleTimer}
           className="w-10 h-10 rounded-full bg-primary flex items-center justify-center active:scale-95 transition-transform"
         >
           {isRunning
