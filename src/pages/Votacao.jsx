@@ -28,6 +28,10 @@ export default function Votacao() {
   const loadVotos = useCallback(async (currentVotos) => {
     if (!profile?.id || !ciclo?.id) return
     const all = await fetchApprovedProfiles()
+    
+    // Ordena alfabeticamente para a votação não ficar trocando de lugar em real-time
+    all.sort((a, b) => a.nome.localeCompare(b.nome))
+    
     const others = all.filter(p => p.id !== profile.id)
     const votoMap = currentVotos ?? {}
     if (!currentVotos) {
