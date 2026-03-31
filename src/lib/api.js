@@ -442,6 +442,15 @@ export async function saveVotoRodada(rodadaId, votanteId, melhorId, bagreId) {
   if (error) throw error
 }
 
+export async function clearVotosRodada(rodadaId) {
+  if (USE_MOCK) return
+  const { error } = await supabase
+    .from('votos_rodada')
+    .delete()
+    .eq('rodada_id', rodadaId)
+  if (error) throw error
+}
+
 // ─── HISTÓRICO DE RODADAS (Home) ────────────────────────────
 export async function fetchRodadasEncerradas() {
   if (USE_MOCK) return mockRodadasHistory

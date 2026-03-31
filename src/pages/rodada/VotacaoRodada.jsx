@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import { useRodada } from '@/context/RodadaContext'
 import { useAuth } from '@/hooks/useAuth'
-import { fetchMeuVotoRodada, fetchVotosRodada, saveVotoRodada } from '@/lib/api'
+import { fetchMeuVotoRodada, fetchVotosRodada, saveVotoRodada, clearVotosRodada } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 
 function computeVotos(rawVotos) {
@@ -18,12 +18,16 @@ export default function VotacaoRodada({ lista }) {
   const { rodada, votacaoRodadaAberta } = useRodada()
   const { profile } = useAuth()
 
+  const isAdmin = profile?.papel === 'admin'
+
   const [meuVoto, setMeuVoto]     = useState(null)   // { melhor_id, bagre_id } | null
   const [votosRodada, setVotos]   = useState({ melhor: {}, bagre: {} })
   const [selMelhor, setSelMelhor] = useState(null)
   const [selBagre, setSelBagre]   = useState(null)
   const [loading, setLoading]     = useState(true)
   const [saving, setSaving]       = useState(false)
+  const [clearing, setClearing]   = useState(false)
+  const [confirmClear, setConfirmClear] = useState(false)
 
   const loadVotos = useCallback(async () => {
     if (!rodada?.id || !profile?.id) return
@@ -86,6 +90,22 @@ export default function VotacaoRodada({ lista }) {
     setSaving(false)
   }
 
+  async function handleClearVotos() {
+    if (!rodada?.id) return
+    setClearing(true)
+    try {
+      await clearVotosRodada(rodada.id)
+      setMeuVoto(null)
+      setVotos({ melhor: {}, bagre: {} })
+      setSelMelhor(null)
+      setSelBagre(null)
+      setConfirmClear(false)
+    } catch (err) {
+      console.error('Erro ao limpar votos:', err)
+    }
+    setClearing(false)
+  }
+
   // ── Resultados (após votar) ───────────────────────────────
   if (jaVotou) {
     const melhorRanking = [...candidates]
@@ -98,7 +118,18 @@ export default function VotacaoRodada({ lista }) {
 
     return (
       <div className="space-y-4 mt-4">
-        <p className="text-text-muted text-xs font-semibold uppercase tracking-wider">Votação da Rodada</p>
+        <div className="flex items-center justify-between">
+          <p className="text-text-muted text-xs font-semibold uppercase tracking-wider">Votação da Rodada</p>
+          {isAdmin && (
+            <AdminClearButton
+              confirming={confirmClear}
+              clearing={clearing}
+              onRequest={() => setConfirmClear(true)}
+              onConfirm={handleClearVotos}
+              onCancel={() => setConfirmClear(false)}
+            />
+          )}
+        </div>
         <RankingCard
           emoji="⭐" title="Melhor da Rodada"
           titleColor="text-secondary" leaderColor="text-secondary"
@@ -128,7 +159,18 @@ export default function VotacaoRodada({ lista }) {
 
   return (
     <div className="space-y-4 mt-4">
-      <p className="text-text-muted text-xs font-semibold uppercase tracking-wider">Votação da Rodada</p>
+      <div className="flex items-center justify-between">
+        <p className="text-text-muted text-xs font-semibold uppercase tracking-wider">Votação da Rodada</p>
+        {isAdmin && (
+          <AdminClearButton
+            confirming={confirmClear}
+            clearing={clearing}
+            onRequest={() => setConfirmClear(true)}
+            onConfirm={handleClearVotos}
+            onCancel={() => setConfirmClear(false)}
+          />
+        )}
+      </div>
 
       <div className="bg-card rounded-2xl p-4 space-y-3">
         <div>
@@ -198,6 +240,39 @@ function PlayerOption({ presenca, selected, disabled, selectedColor, checkColor,
       </div>
       <p className="text-text-main text-sm font-semibold flex-1 text-left">{p?.nome}</p>
       {selected && <span className={cn('text-sm font-bold', checkColor)}>✓</span>}
+    </button>
+  )
+}
+
+function AdminClearButton({ confirming, clearing, onRequest, onConfirm, onCancel }) {
+  if (clearing) {
+    return <span className="text-text-muted text-xs">Limpando...</span>
+  }
+  if (confirming) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-text-muted text-xs">Limpar tudo?</span>
+        <button
+          onClick={onConfirm}
+          className="text-xs font-bold text-danger bg-danger/10 px-2 py-1 rounded-lg active:scale-95 transition-transform"
+        >
+          Sim
+        </button>
+        <button
+          onClick={onCancel}
+          className="text-xs font-bold text-text-muted bg-elevated px-2 py-1 rounded-lg active:scale-95 transition-transform"
+        >
+          Não
+        </button>
+      </div>
+    )
+  }
+  return (
+    <button
+      onClick={onRequest}
+      className="text-xs font-bold text-danger bg-danger/10 px-3 py-1.5 rounded-lg active:scale-95 transition-transform"
+    >
+      🗑 Votos Admin
     </button>
   )
 }
