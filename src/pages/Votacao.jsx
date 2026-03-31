@@ -29,7 +29,6 @@ export default function Votacao() {
     if (!profile?.id || !ciclo?.id) return
     const all = await fetchApprovedProfiles()
     const others = all.filter(p => p.id !== profile.id)
-    setPlayers(others)
     const votoMap = currentVotos ?? {}
     if (!currentVotos) {
       const existingVotos = await fetchMyVotos(ciclo.id, profile.id)
@@ -37,6 +36,7 @@ export default function Votacao() {
       setVotos(votoMap)
     }
     const firstPending = others.findIndex(p => !votoMap[p.id])
+    setPlayers(others)
     setIndex(firstPending === -1 ? others.length : firstPending)
   }, [profile?.id, ciclo?.id])
 
