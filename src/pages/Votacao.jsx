@@ -83,12 +83,18 @@ export default function Votacao() {
     setClearingAdmin(true)
     try {
       await votarComoAdmin()
-      setVotos({})
+      // Reseta estado local e recarrega do banco (agora limpo)
+      const emptyVotos = {}
+      setVotos(emptyVotos)
       setIndex(0)
       setRating(0)
       setRerating(null)
       setConfirmAdmin(false)
-    } catch (_) {}
+      await loadVotos(emptyVotos)
+    } catch (err) {
+      console.error('Erro ao ativar votos admin:', err)
+      alert('Erro ao limpar votações. Verifique o console e certifique-se de que a função SQL foi criada no Supabase.')
+    }
     setClearingAdmin(false)
   }
 

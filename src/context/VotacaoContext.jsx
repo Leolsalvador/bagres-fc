@@ -29,19 +29,16 @@ export function VotacaoProvider({ children }) {
   }
 
   async function votarComoAdmin() {
-    try {
-      await clearAllVotosAndRatings()
-      // Avisa o Home (e outras telas) para recarregar os ratings zerados
-      supabase.channel('home-profiles').send({
-        type: 'broadcast',
-        event: 'ratings-reset',
-      }).catch(() => {})
-      const novo = await createCiclo(true) // apenas_admins = true
-      setCiclo(novo)
-      setVotacaoAbertaState(true)
-    } catch (err) {
-      console.error('Erro ao ativar votos admin:', err)
-    }
+    // Limpa todos os votos e zera ratings via RPC (security definer — bypassa RLS)
+    await clearAllVotosAndRatings()
+    // Avisa o Home (e outras telas) para recarregar os ratings zerados
+    supabase.channel('home-profiles').send({
+      type: 'broadcast',
+      event: 'ratings-reset',
+    }).catch(() => {})
+    const novo = await createCiclo(true) // apenas_admins = true
+    setCiclo(novo)
+    setVotacaoAbertaState(true)
   }
 
   return (
