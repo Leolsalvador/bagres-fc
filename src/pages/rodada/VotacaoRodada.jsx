@@ -106,71 +106,65 @@ export default function VotacaoRodada({ lista }) {
     setClearing(false)
   }
 
-  // ── Resultados (após votar) ───────────────────────────────
-  if (jaVotou) {
-    const melhorRanking = [...candidates]
-      .map(p => ({ id: p.usuario_id, nome: p.profiles?.nome, votos: votosRodada.melhor[p.usuario_id] ?? 0 }))
-      .sort((a, b) => b.votos - a.votos)
+  const melhorRanking = [...candidates]
+    .map(p => ({ id: p.usuario_id, nome: p.profiles?.nome, votos: votosRodada.melhor[p.usuario_id] ?? 0 }))
+    .sort((a, b) => b.votos - a.votos)
+  const bagreRanking = [...candidates]
+    .map(p => ({ id: p.usuario_id, nome: p.profiles?.nome, votos: votosRodada.bagre[p.usuario_id] ?? 0 }))
+    .sort((a, b) => b.votos - a.votos)
 
-    const bagreRanking = [...candidates]
-      .map(p => ({ id: p.usuario_id, nome: p.profiles?.nome, votos: votosRodada.bagre[p.usuario_id] ?? 0 }))
-      .sort((a, b) => b.votos - a.votos)
+  const canConfirm = selMelhor && selBagre && selMelhor !== selBagre
 
+  // Cabeçalho sempre visível (botão admin aparece independente de participação)
+  const header = (
+    <div className="flex items-center justify-between">
+      <p className="text-text-muted text-xs font-semibold uppercase tracking-wider">Votação da Rodada</p>
+      {isAdmin && (
+        <AdminClearButton
+          confirming={confirmClear}
+          clearing={clearing}
+          onRequest={() => setConfirmClear(true)}
+          onConfirm={handleClearVotos}
+          onCancel={() => setConfirmClear(false)}
+        />
+      )}
+    </div>
+  )
+
+  // ── Não participou ────────────────────────────────────────
+  if (!isParticipante && !jaVotou) {
     return (
       <div className="space-y-4 mt-4">
-        <div className="flex items-center justify-between">
-          <p className="text-text-muted text-xs font-semibold uppercase tracking-wider">Votação da Rodada</p>
-          {isAdmin && (
-            <AdminClearButton
-              confirming={confirmClear}
-              clearing={clearing}
-              onRequest={() => setConfirmClear(true)}
-              onConfirm={handleClearVotos}
-              onCancel={() => setConfirmClear(false)}
-            />
-          )}
+        {header}
+        <div className="bg-card rounded-2xl p-4 text-center space-y-1">
+          <p className="text-text-main font-semibold text-sm">Você não participou desta rodada.</p>
         </div>
-        <RankingCard
-          emoji="⭐" title="Melhor da Rodada"
-          titleColor="text-secondary" leaderColor="text-secondary"
-          ranking={melhorRanking} meuVoto={meuVoto?.melhor_id}
-        />
-        <RankingCard
-          emoji="🐟" title="Bagre da Rodada"
-          titleColor="text-danger" leaderColor="text-danger"
-          ranking={bagreRanking} meuVoto={meuVoto?.bagre_id}
-        />
+        {/* Admin vê ranking mesmo sem ter participado */}
+        {isAdmin && (
+          <>
+            <RankingCard emoji="⭐" title="Melhor da Rodada" titleColor="text-secondary" leaderColor="text-secondary" ranking={melhorRanking} meuVoto={null} />
+            <RankingCard emoji="🐟" title="Bagre da Rodada" titleColor="text-danger" leaderColor="text-danger" ranking={bagreRanking} meuVoto={null} />
+          </>
+        )}
       </div>
     )
   }
 
-  // ── Não participou ────────────────────────────────────────
-  if (!isParticipante) {
+  // ── Resultados (após votar) ───────────────────────────────
+  if (jaVotou) {
     return (
-      <div className="mt-4 bg-card rounded-2xl p-4 text-center space-y-1">
-        <p className="text-text-main font-semibold text-sm">Votação da Rodada</p>
-        <p className="text-text-muted text-xs">Você não participou desta rodada.</p>
+      <div className="space-y-4 mt-4">
+        {header}
+        <RankingCard emoji="⭐" title="Melhor da Rodada" titleColor="text-secondary" leaderColor="text-secondary" ranking={melhorRanking} meuVoto={meuVoto?.melhor_id} />
+        <RankingCard emoji="🐟" title="Bagre da Rodada" titleColor="text-danger" leaderColor="text-danger" ranking={bagreRanking} meuVoto={meuVoto?.bagre_id} />
       </div>
     )
   }
 
   // ── Formulário de voto ────────────────────────────────────
-  const canConfirm = selMelhor && selBagre && selMelhor !== selBagre
-
   return (
     <div className="space-y-4 mt-4">
-      <div className="flex items-center justify-between">
-        <p className="text-text-muted text-xs font-semibold uppercase tracking-wider">Votação da Rodada</p>
-        {isAdmin && (
-          <AdminClearButton
-            confirming={confirmClear}
-            clearing={clearing}
-            onRequest={() => setConfirmClear(true)}
-            onConfirm={handleClearVotos}
-            onCancel={() => setConfirmClear(false)}
-          />
-        )}
-      </div>
+      {header}
 
       <div className="bg-card rounded-2xl p-4 space-y-3">
         <div>
