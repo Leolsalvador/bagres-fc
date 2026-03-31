@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Star, Target, Handshake, Shirt } from 'lucide-react'
-import { fetchProfileById } from '@/lib/api'
+import { ArrowLeft, Star, Target, Handshake, Shirt, Pencil, Check, X } from 'lucide-react'
+import { fetchProfileById, updatePlayerStats } from '@/lib/api'
+import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 
 const POSICAO_COLOR = {
@@ -19,8 +20,14 @@ const POSICAO_LABEL = {
 export default function PerfilPublico() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { profile: currentProfile } = useAuth()
+  const isAdmin = currentProfile?.papel === 'admin'
   const [player, setPlayer] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(false)
+  const [editValues, setEditValues] = useState({ gols: 0, assistencias: 0, jogos: 0 })
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(null)
 
   useEffect(() => {
     fetchProfileById(id)
@@ -57,6 +64,36 @@ export default function PerfilPublico() {
 
   const mediaGols = player.jogos > 0 ? (player.gols / player.jogos).toFixed(2) : '—'
   const mediaAssist = player.jogos > 0 ? (player.assistencias / player.jogos).toFixed(2) : '—'
+
+  function handleStartEdit() {
+    setEditValues({ gols: player.gols ?? 0, assistencias: player.assistencias ?? 0, jogos: player.jogos ?? 0 })
+    setSaveError(null)
+    setEditing(true)
+  }
+
+  function handleCancelEdit() {
+    setEditing(false)
+    setSaveError(null)
+  }
+
+  async function handleSaveStats() {
+    setSaving(true)
+    setSaveError(null)
+    try {
+      const parsed = {
+        gols: parseInt(editValues.gols, 10) || 0,
+        assistencias: parseInt(editValues.assistencias, 10) || 0,
+        jogos: parseInt(editValues.jogos, 10) || 0,
+      }
+      await updatePlayerStats(id, parsed)
+      setPlayer(prev => ({ ...prev, ...parsed }))
+      setEditing(false)
+    } catch (e) {
+      setSaveError('Erro ao salvar. Tente novamente.')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <div className="min-h-full bg-background pb-8">
@@ -127,6 +164,91 @@ export default function PerfilPublico() {
               <p className="text-primary font-bold">{mediaAssist}</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Admin: edição manual de estatísticas */}
+      {isAdmin && (
+        <div className="mx-4 mt-6 bg-card rounded-2xl p-4 border border-secondary/30">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-secondary text-xs font-bold uppercase tracking-wider">Admin</p>
+              <p className="text-text-main text-sm font-semibold">Editar estatísticas</p>
+            </div>
+            {!editing && (
+              <button
+                onClick={handleStartEdit}
+                className="flex items-center gap-1.5 bg-secondary/10 text-secondary text-xs font-bold px-3 py-1.5 rounded-full active:scale-90 transition-transform"
+              >
+                <Pencil size={13} />
+                Editar
+              </button>
+            )}
+          </div>
+
+          {editing ? (
+            <div className="space-y-3">
+              {[
+                { key: 'gols', label: 'Gols', icon: Target },
+                { key: 'assistencias', label: 'Assistências', icon: Handshake },
+                { key: 'jogos', label: 'Jogos', icon: Shirt },
+              ].map(({ key, label, icon: Icon }) => (
+                <div key={key} className="flex items-center gap-3">
+                  <Icon size={16} className="text-text-muted shrink-0" />
+                  <p className="text-text-main text-sm flex-1">{label}</p>
+                  <input
+                    type="number"
+                    min={0}
+                    value={editValues[key]}
+                    onChange={e => setEditValues(prev => ({ ...prev, [key]: e.target.value }))}
+                    className="w-20 bg-elevated text-text-main text-sm font-bold text-center rounded-lg px-2 py-1.5 border border-border focus:border-secondary focus:outline-none"
+                  />
+                </div>
+              ))}
+
+              {saveError && (
+                <p className="text-danger text-xs text-center">{saveError}</p>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={handleCancelEdit}
+                  disabled={saving}
+                  className="flex-1 flex items-center justify-center gap-1.5 bg-elevated text-text-muted text-sm font-bold py-2 rounded-xl active:scale-95 transition-transform"
+                >
+                  <X size={15} />
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveStats}
+                  disabled={saving}
+                  className="flex-1 flex items-center justify-center gap-1.5 bg-secondary text-background text-sm font-bold py-2 rounded-xl active:scale-95 transition-transform disabled:opacity-60"
+                >
+                  {saving ? (
+                    <div className="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Check size={15} />
+                      Salvar
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: 'Gols', value: player.gols ?? 0 },
+                { label: 'Assist.', value: player.assistencias ?? 0 },
+                { label: 'Jogos', value: player.jogos ?? 0 },
+              ].map(({ label, value }) => (
+                <div key={label} className="bg-elevated rounded-xl p-3 text-center">
+                  <p className="text-text-main font-black text-xl">{value}</p>
+                  <p className="text-text-muted text-xs">{label}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

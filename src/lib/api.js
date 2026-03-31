@@ -36,6 +36,14 @@ function nextMonday() {
 const PROFILE_FIELDS = 'id, nome, foto_url, rating, gols, assistencias, jogos, papel, status, posicao_campo'
 
 // ─── PROFILES ───────────────────────────────────────────────
+export async function updatePlayerStats(userId, { gols, assistencias, jogos }) {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ gols, assistencias, jogos })
+    .eq('id', userId)
+  if (error) throw error
+}
+
 export async function updateProfile(userId, { nome, foto_url, posicao_campo }) {
   const updates = {}
   if (nome !== undefined) updates.nome = nome

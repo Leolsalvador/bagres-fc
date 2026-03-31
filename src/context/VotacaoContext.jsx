@@ -15,6 +15,21 @@ export function VotacaoProvider({ children }) {
         setVotacaoAbertaState(c?.aberta ?? false)
       })
       .catch(console.error)
+
+    // Liga a antena para qualquer celular perceber que o admin abriu novo ciclo
+    const channel = supabase
+      .channel('ciclos-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ciclos_votacao' }, (payload) => {
+        setCiclo(payload.new)
+        setVotacaoAbertaState(payload.new.aberta)
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ciclos_votacao' }, (payload) => {
+        setCiclo(payload.new)
+        setVotacaoAbertaState(payload.new.aberta)
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [])
 
   async function reabrirVotacao() {
