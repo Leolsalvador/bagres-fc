@@ -54,6 +54,9 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatc
   const intervalRef  = useRef(null)
   const wakeLockRef  = useRef(null)
   const endTimeRef   = useRef(null) // timestamp absoluto em que o timer chega a 0
+  const audioCtxRef  = useRef(null) // AudioContext silencioso (ativa Media Session no iOS)
+  const isRunningRef = useRef(false)
+  const secondsRef   = useRef(duration)
 
   // ── Wake Lock: impede a tela de apagar enquanto roda ─────────
   async function requestWakeLock() {
@@ -65,6 +68,65 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatc
   function releaseWakeLock() {
     wakeLockRef.current?.release()
     wakeLockRef.current = null
+  }
+
+  // ── Sync refs com estado ────────────────────────────────────
+  useEffect(() => { isRunningRef.current = isRunning }, [isRunning])
+  useEffect(() => { secondsRef.current   = seconds   }, [seconds])
+
+  // ── Áudio silencioso para ativar Media Session no iOS ─────────
+  function startSilentAudio() {
+    if (audioCtxRef.current) return
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext
+      if (!Ctx) return
+      const ctx  = new Ctx()
+      const osc  = ctx.createOscillator()
+      const gain = ctx.createGain()
+      gain.gain.value = 0.001
+      osc.connect(gain)
+      const dest = ctx.createMediaStreamDestination()
+      gain.connect(dest)
+      osc.start()
+      const audio = new Audio()
+      audio.srcObject = dest.stream
+      audio.loop = true
+      audio.play().catch(() => {})
+      audioCtxRef.current = { ctx, osc, audio }
+    } catch (_) {}
+  }
+
+  function stopSilentAudio() {
+    try {
+      audioCtxRef.current?.osc?.stop()
+      audioCtxRef.current?.ctx?.close()
+      const a = audioCtxRef.current?.audio
+      if (a) { a.pause(); a.srcObject = null }
+    } catch (_) {}
+    audioCtxRef.current = null
+  }
+
+  // ── Service Worker: agenda alarme no fim do timer ─────────────
+  function sendAlarmToSW(endTimestamp) {
+    try {
+      navigator.serviceWorker?.controller?.postMessage({
+        type: 'TIMER_ALARM_SET', endTimestamp,
+        teamA: match.teamA.nome, teamB: match.teamB.nome,
+      })
+    } catch (_) {}
+  }
+  function cancelSWAlarm() {
+    try {
+      navigator.serviceWorker?.controller?.postMessage({ type: 'TIMER_ALARM_CANCEL' })
+    } catch (_) {}
+  }
+
+  // ── Media Session: atualiza artista com tempo restante ────────
+  function updateMediaSessionArtist(secs) {
+    try {
+      if (navigator.mediaSession?.metadata)
+        navigator.mediaSession.metadata.artist = `⏱ ${formatTime(secs)} restante`
+    } catch (_) {}
   }
 
   // ── Restaura estado salvo ao montar ──────────────────────────
@@ -110,6 +172,8 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatc
   useEffect(() => {
     if (isRunning) {
       requestWakeLock()
+      sendAlarmToSW(endTimeRef.current)
+      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing'
       intervalRef.current = setInterval(() => {
         const remaining = Math.round((endTimeRef.current - Date.now()) / 1000)
         if (remaining <= 0) {
@@ -119,13 +183,18 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatc
           setSeconds(0)
           releaseWakeLock()
           playBeep()
+          cancelSWAlarm()
+          stopSilentAudio()
         } else {
           setSeconds(remaining)
+          updateMediaSessionArtist(remaining)
         }
       }, 500)
     } else {
       clearInterval(intervalRef.current)
       releaseWakeLock()
+      cancelSWAlarm()
+      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused'
     }
     return () => { clearInterval(intervalRef.current); releaseWakeLock() }
   }, [isRunning])
@@ -135,10 +204,13 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatc
     function onVisibilityChange() {
       if (document.visibilityState !== 'visible' || !isRunning) return
       requestWakeLock()
+      startSilentAudio() // tenta reativar áudio (funciona no Android)
+      sendAlarmToSW(endTimeRef.current) // reagénda alarm no SW
       if (endTimeRef.current) {
         const remaining = Math.round((endTimeRef.current - Date.now()) / 1000)
         if (remaining <= 0) {
           setSeconds(0); setIsRunning(false); setTimeExpired(true); playBeep()
+          cancelSWAlarm(); stopSilentAudio()
         } else {
           setSeconds(remaining)
         }
@@ -151,6 +223,39 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatc
   const colorA = TEAM_COLORS[teamAIndex % TEAM_COLORS.length]
   const colorB = TEAM_COLORS[teamBIndex % TEAM_COLORS.length]
 
+  // ── Media Session: configura metadados e botões da tela bloqueada ─
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title:  `${match.teamA.nome} × ${match.teamB.nome}`,
+      artist: `⏱ ${formatTime(duration)} — Pronto para iniciar`,
+      album:  'Bagres FC 🏆',
+    })
+    // Botões da tela bloqueada controlam o timer
+    navigator.mediaSession.setActionHandler('play',  () => {
+      if (!isRunningRef.current) {
+        endTimeRef.current = Date.now() + secondsRef.current * 1000
+        setIsRunning(true)
+      }
+    })
+    navigator.mediaSession.setActionHandler('pause', () => setIsRunning(false))
+    navigator.mediaSession.setActionHandler('stop',  () => {
+      setIsRunning(false)
+      endTimeRef.current = null
+      setSeconds(duration)
+      setTimeExpired(false)
+    })
+    return () => {
+      try {
+        navigator.mediaSession.metadata = null
+        ;['play','pause','stop'].forEach(a => navigator.mediaSession.setActionHandler(a, null))
+      } catch (_) {}
+      stopSilentAudio()
+      cancelSWAlarm()
+    }
+  }, []) // eslint-disable-line
+
   useEffect(() => {
     if (!drawNotice) return
     const t = setTimeout(() => setDrawNotice(false), 2500)
@@ -159,17 +264,30 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatc
 
   function handleToggleTimer() {
     if (!isRunning) {
-      // Inicia ou retoma: define o timestamp de fim
+      // Pede permissão de notificação na 1ª interação (precisa de user gesture)
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().catch(() => {})
+      }
+      startSilentAudio()  // ativa Media Session no iOS (precisa de user gesture)
       endTimeRef.current = Date.now() + seconds * 1000
     }
     setIsRunning(r => !r)
   }
 
   function resetTimer() {
+    cancelSWAlarm()
+    stopSilentAudio()
     setIsRunning(false)
     endTimeRef.current = null
     setSeconds(duration)
     setTimeExpired(false)
+    try {
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = 'paused'
+        if (navigator.mediaSession.metadata)
+          navigator.mediaSession.metadata.artist = `⏱ ${formatTime(duration)} — Pronto`
+      }
+    } catch (_) {}
   }
 
   function handleGoalSelect(player, team) {
@@ -196,6 +314,8 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatc
   }
 
   function handleEndGame() {
+    cancelSWAlarm()
+    stopSilentAudio()
     localStorage.removeItem(STORAGE_KEY)
     const winner = goalsA > goalsB ? 'A' : goalsB > goalsA ? 'B' : 'draw'
     onEnd({ teamA: match.teamA, teamB: match.teamB, goalsA, goalsB, winner, events })
