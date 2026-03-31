@@ -400,6 +400,12 @@ export async function saveVoto(cicloId, votanteId, avaliadoId, nota) {
   }
 }
 
+export async function clearAllVotos() {
+  if (USE_MOCK) return
+  const { error } = await supabase.from('votos').delete().not('id', 'is', null)
+  if (error) throw error
+}
+
 export async function fetchMyVotos(cicloId, votanteId) {
   if (USE_MOCK) return []
   const { data, error } = await supabase

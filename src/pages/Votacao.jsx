@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Star, RefreshCw } from 'lucide-react'
+import { Star, RefreshCw, ShieldAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { useVotacao } from '@/context/VotacaoContext'
@@ -8,8 +8,11 @@ import { supabase } from '@/lib/supabase'
 
 export default function Votacao() {
   const { profile } = useAuth()
-  const { ciclo, reabrirVotacao } = useVotacao()
+  const { ciclo, reabrirVotacao, votarComoAdmin } = useVotacao()
   const isAdmin = profile?.papel === 'admin'
+
+  const [confirmAdmin, setConfirmAdmin] = useState(false)
+  const [clearingAdmin, setClearingAdmin] = useState(false)
 
   const [players, setPlayers] = useState([])
   const [index, setIndex]     = useState(0)
@@ -74,6 +77,19 @@ export default function Votacao() {
     setAnimKey(k => k + 1)
     setIndex(i => i + 1)
     saveVoto(ciclo.id, profile.id, targetId, rating).catch(console.error)
+  }
+
+  async function handleVotarAdmin() {
+    setClearingAdmin(true)
+    try {
+      await votarComoAdmin()
+      setVotos({})
+      setIndex(0)
+      setRating(0)
+      setRerating(null)
+      setConfirmAdmin(false)
+    } catch (_) {}
+    setClearingAdmin(false)
   }
 
   if (loadingVotos) {
@@ -145,6 +161,16 @@ export default function Votacao() {
           <h1 className="text-2xl font-black text-text-main uppercase tracking-widest">Votação</h1>
           {isAdmin && <AdminReabrirButton onReabrir={reabrirVotacao} />}
         </div>
+        {isAdmin && (
+          <div className="px-4 mb-2">
+            <AdminVotarCard
+              confirming={confirmAdmin} loading={clearingAdmin}
+              onRequest={() => setConfirmAdmin(true)}
+              onConfirm={handleVotarAdmin}
+              onCancel={() => setConfirmAdmin(false)}
+            />
+          </div>
+        )}
         <div className="flex flex-col items-center px-4 pb-8">
           <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mb-4 mt-2">
             <span className="text-4xl">✅</span>
@@ -184,6 +210,16 @@ export default function Votacao() {
           <p className="text-text-muted text-sm mt-0.5">Avalie seus colegas</p>
           {isAdmin && <AdminReabrirButton onReabrir={reabrirVotacao} />}
         </div>
+        {isAdmin && (
+          <div className="px-4">
+            <AdminVotarCard
+              confirming={confirmAdmin} loading={clearingAdmin}
+              onRequest={() => setConfirmAdmin(true)}
+              onConfirm={handleVotarAdmin}
+              onCancel={() => setConfirmAdmin(false)}
+            />
+          </div>
+        )}
       </div>
     )
   }
@@ -199,6 +235,18 @@ export default function Votacao() {
         </p>
         {isAdmin && <AdminReabrirButton onReabrir={reabrirVotacao} />}
       </div>
+
+      {/* Votos Admin */}
+      {isAdmin && (
+        <div className="px-4 mb-2">
+          <AdminVotarCard
+            confirming={confirmAdmin} loading={clearingAdmin}
+            onRequest={() => setConfirmAdmin(true)}
+            onConfirm={handleVotarAdmin}
+            onCancel={() => setConfirmAdmin(false)}
+          />
+        </div>
+      )}
 
       {/* Barra de progresso */}
       <div className="mx-4 mt-2 mb-4 h-1.5 bg-card rounded-full overflow-hidden">
@@ -291,6 +339,47 @@ function AdminReabrirButton({ onReabrir }) {
       <RefreshCw size={14} />
       Reabrir votação
     </button>
+  )
+}
+
+export function AdminVotarCard({ confirming, loading, onRequest, onConfirm, onCancel }) {
+  return (
+    <div className="bg-danger/10 border border-danger/30 rounded-2xl p-4">
+      <div className="flex items-center gap-3 mb-3">
+        <ShieldAlert size={18} className="text-danger shrink-0" />
+        <div>
+          <p className="text-danger font-bold text-sm">Votos Admin</p>
+          <p className="text-text-muted text-xs">Limpa todo o histórico de votos e reinicia a votação.</p>
+        </div>
+      </div>
+      {confirming ? (
+        <div className="space-y-2">
+          <p className="text-text-main text-xs font-semibold text-center">Isso apaga TODOS os votos. Confirmar?</p>
+          <div className="flex gap-2">
+            <button
+              onClick={onCancel}
+              className="flex-1 py-2.5 rounded-xl border border-border text-text-muted text-sm font-semibold active:scale-95 transition-transform"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={loading}
+              className="flex-1 py-2.5 rounded-xl bg-danger text-white text-sm font-bold active:scale-95 transition-transform disabled:opacity-50"
+            >
+              {loading ? 'Limpando...' : 'Confirmar'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={onRequest}
+          className="w-full py-2.5 rounded-xl bg-danger/20 text-danger text-sm font-bold active:scale-95 transition-transform"
+        >
+          Votar como Admin
+        </button>
+      )}
+    </div>
   )
 }
 
