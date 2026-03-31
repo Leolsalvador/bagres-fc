@@ -88,8 +88,9 @@ create table public.eventos (
 create table public.ciclos_votacao (
   id          uuid primary key default gen_random_uuid(),
   rodada_id   uuid references public.rodadas(id),
-  aberta      boolean not null default false,
-  created_at  timestamptz default now()
+  aberta         boolean not null default false,
+  apenas_admins  boolean not null default false,
+  created_at     timestamptz default now()
 );
 
 -- VOTOS

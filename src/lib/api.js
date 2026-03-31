@@ -360,10 +360,10 @@ export async function fetchLatestCiclo() {
   return data
 }
 
-export async function createCiclo() {
+export async function createCiclo(apenasAdmins = false) {
   const { data, error } = await supabase
     .from('ciclos_votacao')
-    .insert({ aberta: true })
+    .insert({ aberta: true, apenas_admins: apenasAdmins })
     .select()
     .single()
   if (error) throw error
@@ -400,13 +400,9 @@ export async function saveVoto(cicloId, votanteId, avaliadoId, nota) {
   }
 }
 
-export async function clearMyVotos(cicloId, votanteId) {
+export async function clearVotosCiclo(cicloId) {
   if (USE_MOCK) return
-  const { error } = await supabase
-    .from('votos')
-    .delete()
-    .eq('ciclo_id', cicloId)
-    .eq('votante_id', votanteId)
+  const { error } = await supabase.from('votos').delete().eq('ciclo_id', cicloId)
   if (error) throw error
 }
 

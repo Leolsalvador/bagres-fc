@@ -82,7 +82,7 @@ export default function Votacao() {
   async function handleVotarAdmin() {
     setClearingAdmin(true)
     try {
-      await votarComoAdmin(profile.id)
+      await votarComoAdmin()
       setVotos({})
       setIndex(0)
       setRating(0)
@@ -96,6 +96,17 @@ export default function Votacao() {
     return (
       <div className="min-h-full bg-background flex items-center justify-center">
         <p className="text-text-muted text-sm">Carregando votação...</p>
+      </div>
+    )
+  }
+
+  // Ciclo reservado para admins — jogadores comuns veem mensagem de bloqueio
+  if (ciclo?.apenas_admins && !isAdmin) {
+    return (
+      <div className="min-h-full bg-background flex flex-col items-center justify-center px-6 text-center gap-4">
+        <ShieldAlert size={48} className="text-danger opacity-60" />
+        <p className="text-text-main font-black text-xl">Votação Admin</p>
+        <p className="text-text-muted text-sm">Esta rodada de votos é exclusiva para os admins.<br />Aguarde a próxima votação.</p>
       </div>
     )
   }
@@ -349,12 +360,12 @@ export function AdminVotarCard({ confirming, loading, onRequest, onConfirm, onCa
         <ShieldAlert size={18} className="text-danger shrink-0" />
         <div>
           <p className="text-danger font-bold text-sm">Votos Admin</p>
-          <p className="text-text-muted text-xs">Apaga seus votos neste ciclo e permite votar novamente.</p>
+          <p className="text-text-muted text-xs">Reseta todos os votos. Só admins poderão votar neste ciclo.</p>
         </div>
       </div>
       {confirming ? (
         <div className="space-y-2">
-          <p className="text-text-main text-xs font-semibold text-center">Apaga seus votos deste ciclo e você vota de novo. Confirmar?</p>
+          <p className="text-text-main text-xs font-semibold text-center">Reseta todos os votos e bloqueia jogadores. Só admins votam. Confirmar?</p>
           <div className="flex gap-2">
             <button
               onClick={onCancel}

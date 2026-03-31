@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { fetchLatestCiclo, createCiclo, clearMyVotos, sendPushNotification } from '@/lib/api'
+import { fetchLatestCiclo, createCiclo, clearVotosCiclo, sendPushNotification } from '@/lib/api'
 
 const VotacaoContext = createContext(null)
 
@@ -27,11 +27,14 @@ export function VotacaoProvider({ children }) {
     }
   }
 
-  async function votarComoAdmin(adminId) {
+  async function votarComoAdmin() {
     try {
-      if (ciclo?.id && adminId) await clearMyVotos(ciclo.id, adminId)
+      if (ciclo?.id) await clearVotosCiclo(ciclo.id)
+      const novo = await createCiclo(true) // apenas_admins = true
+      setCiclo(novo)
+      setVotacaoAbertaState(true)
     } catch (err) {
-      console.error('Erro ao limpar votos do admin:', err)
+      console.error('Erro ao ativar votos admin:', err)
     }
   }
 
