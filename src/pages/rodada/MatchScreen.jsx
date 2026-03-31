@@ -69,12 +69,12 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatc
 
   // ── Restaura estado salvo ao montar ──────────────────────────
   useEffect(() => {
-    const raw = sessionStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return
     try {
       const s = JSON.parse(raw)
       if (s.teamA !== match.teamA.nome || s.teamB !== match.teamB.nome) {
-        sessionStorage.removeItem(STORAGE_KEY); return
+        localStorage.removeItem(STORAGE_KEY); return
       }
       setGoalsA(s.goalsA ?? 0)
       setGoalsB(s.goalsB ?? 0)
@@ -92,13 +92,13 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatc
         setSeconds(s.seconds ?? duration)
         setTimeExpired(s.timeExpired ?? false)
       }
-    } catch (_) { sessionStorage.removeItem(STORAGE_KEY) }
+    } catch (_) { localStorage.removeItem(STORAGE_KEY) }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ── Persiste estado a cada tick ───────────────────────────────
   useEffect(() => {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
       teamA: match.teamA.nome, teamB: match.teamB.nome,
       seconds, isRunning,
       endTimestamp: endTimeRef.current,
@@ -196,7 +196,7 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatc
   }
 
   function handleEndGame() {
-    sessionStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(STORAGE_KEY)
     const winner = goalsA > goalsB ? 'A' : goalsB > goalsA ? 'B' : 'draw'
     onEnd({ teamA: match.teamA, teamB: match.teamB, goalsA, goalsB, winner, events })
   }

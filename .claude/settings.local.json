@@ -5,7 +5,24 @@
       "Bash(npm run:*)",
       "Bash(\"C:/Users/User/Documents/Codes/Bagres FC/.env\":*)",
       "Bash(npx vercel:*)",
-      "Bash(ls -la .env*)"
+      "Bash(ls -la .env*)",
+      "Bash(gh repo:*)",
+      "Bash(where gh:*)",
+      "Bash(winget list:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://api.github.com)",
+      "Bash(node -e \":*)",
+      "Bash(npx supabase:*)",
+      "Bash(xargs grep:*)",
+      "Bash(find '/c/Users/User/Documents/Codes/Bagres FC/src' -type f \\\\\\(-name *.jsx -o -name *.tsx -o -name *.js -o -name *.ts \\\\\\))",
+      "Bash(find /c/Users/User/Documents/Codes/Bagres FC -type f \\\\\\(-name *.ts -o -name *.js \\\\\\) -path */api/* -o -path */functions/*)",
+      "Bash(supabase functions:*)",
+      "Bash(scoop --version)",
+      "Bash(winget --version)",
+      "Bash(scoop bucket:*)",
+      "Bash(powershell -Command \"scoop bucket add supabase https://github.com/supabase/scoop-bucket.git\")",
+      "Bash(powershell -Command \"winget --version\")",
+      "Bash(find . -type f \\\\\\(-name *.sql -o -name schema* -o -name *migration* \\\\\\))",
+      "Bash(vercel --prod)"
     ]
   }
 }

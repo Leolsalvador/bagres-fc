@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Check, X, Trash2, Shuffle, Play, LogIn, XCircle, ChevronRight, UserPlus, ArrowUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useRodada } from '@/context/RodadaContext'
@@ -13,6 +13,9 @@ import MontagemListaModal from '@/components/rodada/MontagemListaModal'
 import MontagemManualModal from '@/components/rodada/MontagemManualModal'
 
 const DEV_STATES = ['aguardando', 'aberta', 'sorteada', 'em_jogo', 'encerrada']
+
+// Chave para persistir estado da partida em andamento
+const MATCH_SESSION_KEY = 'bagres-match-session'
 
 const STATUS_LABEL = {
   aguardando: 'Aguardando abertura',
@@ -48,12 +51,52 @@ export default function AdminRodada() {
   const [montagemModal, setMontagemModal]       = useState(false)
   const [montagemManual, setMontagemManual]     = useState(false)
 
+  // ── Restaura estado ao voltar do background / bloqueio ──
+  const hasRestoredRef = useRef(false)
+  useEffect(() => {
+    if (!teams || teams.length === 0 || hasRestoredRef.current) return
+    hasRestoredRef.current = true
+    try {
+      const raw = localStorage.getItem(MATCH_SESSION_KEY)
+      if (!raw) return
+      const saved = JSON.parse(raw)
+      // Valida que os times batem com o sorteio atual
+      const savedNames  = saved.teamNames ?? []
+      const currentNames = teams.map(t => t.nome)
+      if (
+        savedNames.length !== currentNames.length ||
+        !savedNames.every((n, i) => n === currentNames[i])
+      ) {
+        localStorage.removeItem(MATCH_SESSION_KEY)
+        return
+      }
+      if (saved.currentMatch)               setCurrentMatch(saved.currentMatch)
+      if (Array.isArray(saved.waitingQueue)) setWaitingQueue(saved.waitingQueue)
+      if (saved.onFieldWinner !== undefined) setOnFieldWinner(saved.onFieldWinner)
+    } catch (_) {
+      localStorage.removeItem(MATCH_SESSION_KEY)
+    }
+  }, [teams])
+
+  // ── Persiste estado sempre que muda ─────────────────────
+  useEffect(() => {
+    if (!teams || teams.length === 0) return
+    localStorage.setItem(MATCH_SESSION_KEY, JSON.stringify({
+      teamNames:    teams.map(t => t.nome),
+      currentMatch,
+      waitingQueue,
+      onFieldWinner,
+    }))
+  }, [currentMatch, waitingQueue, onFieldWinner, teams])
+
   const lista     = presencas.filter(p => p.posicao <= 20).sort((a, b) => a.posicao - b.posicao)
   const fila      = presencas.filter(p => p.posicao > 20 && p.posicao < 100).sort((a, b) => a.posicao - b.posicao)
   const goleiros  = presencas.filter(p => p.posicao >= 100).sort((a, b) => a.posicao - b.posicao)
   const pagos     = lista.filter(p => p.status === 'pago').length
 
   function handleDraw() {
+    localStorage.removeItem(MATCH_SESSION_KEY)
+    hasRestoredRef.current = false
     setCurrentMatch(null)
     setMatchHistory([])
     setWaitingQueue([0, 1, 2, 3])
