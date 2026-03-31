@@ -82,7 +82,7 @@ export default function Votacao() {
   async function handleVotarAdmin() {
     setClearingAdmin(true)
     try {
-      await votarComoAdmin()
+      await votarComoAdmin(profile.id)
       setVotos({})
       setIndex(0)
       setRating(0)
@@ -349,12 +349,12 @@ export function AdminVotarCard({ confirming, loading, onRequest, onConfirm, onCa
         <ShieldAlert size={18} className="text-danger shrink-0" />
         <div>
           <p className="text-danger font-bold text-sm">Votos Admin</p>
-          <p className="text-text-muted text-xs">Limpa todo o histórico de votos e reinicia a votação.</p>
+          <p className="text-text-muted text-xs">Apaga seus votos neste ciclo e permite votar novamente.</p>
         </div>
       </div>
       {confirming ? (
         <div className="space-y-2">
-          <p className="text-text-main text-xs font-semibold text-center">Isso apaga TODOS os votos. Confirmar?</p>
+          <p className="text-text-main text-xs font-semibold text-center">Apaga seus votos deste ciclo e você vota de novo. Confirmar?</p>
           <div className="flex gap-2">
             <button
               onClick={onCancel}
