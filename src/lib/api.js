@@ -1,5 +1,6 @@
 // src/lib/api.js — Todas as queries do Supabase
 import { supabase } from './supabase'
+import { uploadToR2 } from './r2'
 import {
   USE_MOCK, mockMatchHistory,
   mockCurrentUser, mockPlayers, mockRodada, mockPresencas,
@@ -55,14 +56,8 @@ export async function updateProfile(userId, { nome, foto_url, posicao_campo }) {
 
 export async function uploadAvatar(userId, file) {
   const ext = file.name.split('.').pop()
-  const path = `${userId}/avatar.${ext}`
-  const { error: uploadError } = await supabase.storage
-    .from('avatars')
-    .upload(path, file, { upsert: true })
-  if (uploadError) throw uploadError
-  const { data } = supabase.storage.from('avatars').getPublicUrl(path)
-  // Cache-busting para forçar reload da imagem
-  return `${data.publicUrl}?t=${Date.now()}`
+  const key = `${userId}/avatar.${ext}`
+  return await uploadToR2(key, file)
 }
 
 export async function fetchAdminProfiles() {
@@ -562,13 +557,11 @@ export async function createFeedPost(autorId, legenda, file) {
     }
   }
   const ext = file.name.split('.').pop()
-  const path = `feed/${autorId}/${Date.now()}.${ext}`
-  const { error: uploadError } = await supabase.storage.from('feed-images').upload(path, file)
-  if (uploadError) throw uploadError
-  const { data: urlData } = supabase.storage.from('feed-images').getPublicUrl(path)
+  const key = `feed/${autorId}/${Date.now()}.${ext}`
+  const imageUrl = await uploadToR2(key, file)
   const { data, error } = await supabase
     .from('feed_posts')
-    .insert({ autor_id: autorId, legenda: legenda || null, imagem_url: urlData.publicUrl })
+    .insert({ autor_id: autorId, legenda: legenda || null, imagem_url: imageUrl })
     .select('id, autor_id, legenda, imagem_url, created_at, profiles(id, nome, foto_url), feed_comentarios(count)')
     .single()
   if (error) throw error

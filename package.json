@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
+    "aws4fetch": "^1.0.20",
     "browser-image-compression": "^2.0.2",
     "clsx": "^2.1.1",
     "lucide-react": "^0.454.0",
