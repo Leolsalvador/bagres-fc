@@ -3,7 +3,6 @@ import { Bell, X, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import BottomNav from './BottomNav'
-import IntroVideo from '@/components/IntroVideo'
 import { useAuth } from '@/hooks/useAuth'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 
@@ -17,7 +16,6 @@ export default function Layout() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <IntroVideo />
       {/* Banner: nova versão disponível */}
       {needRefresh && (
         <div className="flex items-center gap-3 bg-secondary/10 border-b border-secondary/20 px-4 py-2.5">
