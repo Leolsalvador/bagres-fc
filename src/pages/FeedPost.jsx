@@ -64,25 +64,23 @@ export default function FeedPost() {
         <h1 className="text-lg font-bold text-text-main">Comentários</h1>
       </div>
 
-      {/* Post preview — compact landscape crop */}
+      {/* Post preview — compact thumbnail row */}
       {post && (
-        <div className="flex-shrink-0 mx-4 mb-4 bg-card rounded-2xl overflow-hidden">
-          <div className="w-full h-48 bg-background">
+        <div className="flex-shrink-0 mx-4 mb-3 flex items-center gap-3 bg-card rounded-2xl p-3">
+          <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-background">
             <img
               src={post.imagem_url}
               alt={post.legenda ?? 'Post'}
               className="w-full h-full object-cover"
             />
           </div>
-          {post.legenda && (
-            <div className="flex gap-2 items-start p-3">
-              <Avatar profile={post.profiles} size="sm" />
-              <p className="text-text-main text-sm leading-relaxed">
-                <span className="font-semibold mr-1">{post.profiles?.nome}</span>
-                {post.legenda}
-              </p>
-            </div>
-          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-text-main text-xs font-semibold truncate">{post.profiles?.nome}</p>
+            {post.legenda
+              ? <p className="text-text-muted text-xs mt-0.5 line-clamp-2 leading-relaxed">{post.legenda}</p>
+              : <p className="text-text-muted text-xs mt-0.5 italic">Sem legenda</p>
+            }
+          </div>
         </div>
       )}
 
