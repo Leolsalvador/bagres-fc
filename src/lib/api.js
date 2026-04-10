@@ -515,7 +515,7 @@ export async function fetchFeedPosts(page = 0) {
   const to = from + FEED_PAGE_SIZE - 1
   const { data, error } = await supabase
     .from('feed_posts')
-    .select('id, autor_id, legenda, imagem_url, created_at, profiles(id, nome, foto_url), feed_comentarios(count)')
+    .select('id, autor_id, legenda, imagem_url, created_at, profiles(id, nome, foto_url), feed_comentarios(count), feed_reactions(emoji, usuario_id)')
     .order('created_at', { ascending: false })
     .range(from, to)
   if (error) throw error
@@ -526,7 +526,7 @@ export async function fetchFeedPost(postId) {
   if (USE_MOCK) return mockFeedPosts.find(p => p.id === postId) ?? null
   const { data, error } = await supabase
     .from('feed_posts')
-    .select('id, autor_id, legenda, imagem_url, created_at, profiles(id, nome, foto_url), feed_comentarios(count)')
+    .select('id, autor_id, legenda, imagem_url, created_at, profiles(id, nome, foto_url), feed_comentarios(count), feed_reactions(emoji, usuario_id)')
     .eq('id', postId)
     .maybeSingle()
   if (error) throw error
@@ -554,6 +554,7 @@ export async function createFeedPost(autorId, legenda, file) {
       created_at: new Date().toISOString(),
       profiles: { id: autorId, nome: 'Leonardo Salvador', foto_url: null },
       feed_comentarios: [{ count: 0 }],
+      feed_reactions: [],
     }
   }
   const ext = file.name.split('.').pop()
@@ -562,7 +563,7 @@ export async function createFeedPost(autorId, legenda, file) {
   const { data, error } = await supabase
     .from('feed_posts')
     .insert({ autor_id: autorId, legenda: legenda || null, imagem_url: imageUrl })
-    .select('id, autor_id, legenda, imagem_url, created_at, profiles(id, nome, foto_url), feed_comentarios(count)')
+    .select('id, autor_id, legenda, imagem_url, created_at, profiles(id, nome, foto_url), feed_comentarios(count), feed_reactions(emoji, usuario_id)')
     .single()
   if (error) throw error
   return data
@@ -592,6 +593,24 @@ export async function deleteFeedPost(postId) {
   if (USE_MOCK) return
   const { error } = await supabase.from('feed_posts').delete().eq('id', postId)
   if (error) throw error
+}
+
+export async function toggleReaction(postId, userId, emoji) {
+  if (USE_MOCK) return
+  const { data: existing } = await supabase
+    .from('feed_reactions')
+    .select('id')
+    .eq('post_id', postId)
+    .eq('usuario_id', userId)
+    .eq('emoji', emoji)
+    .maybeSingle()
+  if (existing) {
+    const { error } = await supabase.from('feed_reactions').delete().eq('id', existing.id)
+    if (error) throw error
+  } else {
+    const { error } = await supabase.from('feed_reactions').insert({ post_id: postId, usuario_id: userId, emoji })
+    if (error) throw error
+  }
 }
 
 function computeTimeDaRodada(partidas) {

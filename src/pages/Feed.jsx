@@ -92,6 +92,7 @@ export default function Feed() {
             key={post.id}
             post={post}
             isAdmin={isAdmin}
+            userId={profile?.id}
             onDeleted={handleDeleted}
           />
         ))}
