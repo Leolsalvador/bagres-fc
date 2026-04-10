@@ -179,7 +179,7 @@ export default function FeedCard({ post, isAdmin, userId, onDeleted }) {
           {sortedReactions.map(([emoji, { count, reacted }]) => (
             <button
               key={emoji}
-              onClick={() => reactions.length > 0 && setModalOpen(true)}
+              onClick={() => handleReact(emoji)}
               className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-sm transition-colors active:scale-90 ${
                 reacted
                   ? 'bg-primary/15 border-primary/40'
@@ -209,17 +209,28 @@ export default function FeedCard({ post, isAdmin, userId, onDeleted }) {
             {post.legenda}
           </p>
         )}
-        <button
-          onClick={() => navigate(`/feed/${post.id}`)}
-          className="flex items-center gap-1.5 text-text-muted text-sm active:scale-95 transition-transform"
-        >
-          <MessageCircle size={17} />
-          <span>
-            {commentCount > 0
-              ? `${commentCount} comentário${commentCount !== 1 ? 's' : ''}`
-              : 'Comentar'}
-          </span>
-        </button>
+        <div className="flex items-center gap-4">
+          {reactions.length > 0 && (
+            <button
+              onClick={() => setModalOpen(true)}
+              className="flex items-center gap-1.5 text-text-muted text-sm active:scale-95 transition-transform"
+            >
+              <span className="text-base leading-none">😊</span>
+              <span>{reactions.length} {reactions.length === 1 ? 'reação' : 'reações'}</span>
+            </button>
+          )}
+          <button
+            onClick={() => navigate(`/feed/${post.id}`)}
+            className="flex items-center gap-1.5 text-text-muted text-sm active:scale-95 transition-transform"
+          >
+            <MessageCircle size={17} />
+            <span>
+              {commentCount > 0
+                ? `${commentCount} comentário${commentCount !== 1 ? 's' : ''}`
+                : 'Comentar'}
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Reaction list modal */}
