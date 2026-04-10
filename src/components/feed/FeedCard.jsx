@@ -25,7 +25,7 @@ function ReactionListModal({ reactions, onClose }) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg bg-card rounded-t-2xl pb-safe"
+        className="w-full max-w-lg bg-card rounded-t-2xl pb-16"
         onClick={e => e.stopPropagation()}
       >
         {/* Handle + close */}
