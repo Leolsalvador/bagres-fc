@@ -151,7 +151,7 @@ export default function FeedCard({ post, isAdmin, userId, onDeleted }) {
       {/* Caption + comment button */}
       <div className="p-3 pt-1.5">
         {post.legenda && (
-          <p className="text-text-main text-sm mb-2 leading-relaxed">
+          <p className="text-text-main text-sm mb-2 leading-relaxed whitespace-pre-wrap">
             <span className="font-semibold mr-1">{post.profiles?.nome}</span>
             {post.legenda}
           </p>

@@ -99,20 +99,23 @@ export default function FeedPost() {
                 <span className="text-text-main text-xs font-semibold">{c.profiles?.nome ?? '—'}</span>
                 <span className="text-text-muted text-[10px]">{timeAgo(c.created_at)}</span>
               </div>
-              <p className="text-text-main text-sm mt-0.5 break-words">{c.texto}</p>
+              <p className="text-text-main text-sm mt-0.5 break-words whitespace-pre-wrap">{c.texto}</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* Comment input — fixed at bottom */}
-      <div className="flex-shrink-0 flex items-center gap-2 px-4 py-3 bg-[#111827] border-t border-[#1F2937]">
-        <input
+      <div className="flex-shrink-0 flex items-end gap-2 px-4 py-3 bg-[#111827] border-t border-[#1F2937]">
+        <textarea
           value={texto}
           onChange={e => setTexto(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
+          onInput={e => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
           placeholder="Escreva um comentário..."
-          className="flex-1 bg-background text-text-main text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary"
+          rows={1}
+          className="flex-1 bg-background text-text-main text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary resize-none leading-relaxed"
+          style={{ maxHeight: '120px', overflowY: 'auto' }}
         />
         <button
           onClick={handleSend}
