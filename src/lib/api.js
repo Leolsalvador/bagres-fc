@@ -515,7 +515,7 @@ export async function fetchFeedPosts(page = 0) {
   const to = from + FEED_PAGE_SIZE - 1
   const { data, error } = await supabase
     .from('feed_posts')
-    .select('id, autor_id, legenda, imagem_url, created_at, profiles(id, nome, foto_url), feed_comentarios(count), feed_reactions(emoji, usuario_id)')
+    .select('id, autor_id, legenda, imagem_url, created_at, profiles(id, nome, foto_url), feed_comentarios(count), feed_reactions(emoji, usuario_id, profiles(nome, foto_url))')
     .order('created_at', { ascending: false })
     .range(from, to)
   if (error) throw error
@@ -526,7 +526,7 @@ export async function fetchFeedPost(postId) {
   if (USE_MOCK) return mockFeedPosts.find(p => p.id === postId) ?? null
   const { data, error } = await supabase
     .from('feed_posts')
-    .select('id, autor_id, legenda, imagem_url, created_at, profiles(id, nome, foto_url), feed_comentarios(count), feed_reactions(emoji, usuario_id)')
+    .select('id, autor_id, legenda, imagem_url, created_at, profiles(id, nome, foto_url), feed_comentarios(count), feed_reactions(emoji, usuario_id, profiles(nome, foto_url))')
     .eq('id', postId)
     .maybeSingle()
   if (error) throw error
@@ -563,7 +563,7 @@ export async function createFeedPost(autorId, legenda, file) {
   const { data, error } = await supabase
     .from('feed_posts')
     .insert({ autor_id: autorId, legenda: legenda || null, imagem_url: imageUrl })
-    .select('id, autor_id, legenda, imagem_url, created_at, profiles(id, nome, foto_url), feed_comentarios(count), feed_reactions(emoji, usuario_id)')
+    .select('id, autor_id, legenda, imagem_url, created_at, profiles(id, nome, foto_url), feed_comentarios(count), feed_reactions(emoji, usuario_id, profiles(nome, foto_url))')
     .single()
   if (error) throw error
   return data

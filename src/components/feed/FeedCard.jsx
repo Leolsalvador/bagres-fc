@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
-import { MessageCircle, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { MessageCircle, Trash2, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { deleteFeedPost, toggleReaction } from '@/lib/api'
 
@@ -13,28 +13,79 @@ function timeAgo(dateStr) {
   return `${Math.floor(diff / 86400)}d`
 }
 
+function ReactionListModal({ reactions, onClose }) {
+  const emojisWithReactions = [...new Set(reactions.map(r => r.emoji))]
+  const [activeEmoji, setActiveEmoji] = useState(emojisWithReactions[0] ?? '')
+
+  const filtered = reactions.filter(r => r.emoji === activeEmoji)
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg bg-card rounded-t-2xl pb-safe"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Handle + close */}
+        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+          <div className="w-10 h-1 bg-white/20 rounded-full mx-auto absolute left-1/2 -translate-x-1/2 top-3" />
+          <span className="text-text-main font-semibold text-sm">Reações</span>
+          <button onClick={onClose} className="text-text-muted active:scale-90 transition-transform">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Emoji tabs */}
+        <div className="flex gap-1 px-4 pb-3 border-b border-white/10 overflow-x-auto">
+          {emojisWithReactions.map(emoji => {
+            const count = reactions.filter(r => r.emoji === emoji).length
+            return (
+              <button
+                key={emoji}
+                onClick={() => setActiveEmoji(emoji)}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${
+                  activeEmoji === emoji
+                    ? 'bg-primary/20 border border-primary/40 text-primary'
+                    : 'bg-[#1F2937] border border-white/10 text-text-muted'
+                }`}
+              >
+                <span>{emoji}</span>
+                <span className="font-medium text-xs">{count}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* User list */}
+        <div className="flex flex-col gap-0 max-h-64 overflow-y-auto">
+          {filtered.map(r => (
+            <div key={r.usuario_id} className="flex items-center gap-3 px-4 py-3">
+              <div className="w-9 h-9 rounded-full bg-background flex items-center justify-center overflow-hidden flex-shrink-0 ring-1 ring-primary/20">
+                {r.profiles?.foto_url
+                  ? <img src={r.profiles.foto_url} alt={r.profiles.nome} className="w-full h-full object-cover" />
+                  : <span className="text-lg">👤</span>
+                }
+              </div>
+              <span className="text-text-main text-sm font-medium">{r.profiles?.nome ?? '—'}</span>
+              <span className="ml-auto text-lg">{r.emoji}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="h-6" />
+      </div>
+    </div>
+  )
+}
+
 export default function FeedCard({ post, isAdmin, userId, onDeleted }) {
   const navigate = useNavigate()
   const commentCount = post.feed_comentarios?.[0]?.count ?? 0
   const [pickerOpen, setPickerOpen] = useState(false)
   const [reactions, setReactions] = useState(post.feed_reactions ?? [])
-  const pickerRef = useRef(null)
-
-  // Close picker when tapping outside
-  useEffect(() => {
-    if (!pickerOpen) return
-    function onOutside(e) {
-      if (pickerRef.current && !pickerRef.current.contains(e.target)) {
-        setPickerOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', onOutside)
-    document.addEventListener('touchstart', onOutside)
-    return () => {
-      document.removeEventListener('mousedown', onOutside)
-      document.removeEventListener('touchstart', onOutside)
-    }
-  }, [pickerOpen])
+  const [modalOpen, setModalOpen] = useState(false)
 
   // Group reactions by emoji
   const grouped = {}
@@ -49,17 +100,16 @@ export default function FeedCard({ post, isAdmin, userId, onDeleted }) {
     if (!userId) return
     setPickerOpen(false)
     const alreadyReacted = grouped[emoji]?.reacted
-    // Optimistic update
     setReactions(prev =>
       alreadyReacted
         ? prev.filter(r => !(r.usuario_id === userId && r.emoji === emoji))
-        : [...prev, { usuario_id: userId, emoji }]
+        : [...prev, { usuario_id: userId, emoji, profiles: null }]
     )
     try {
       await toggleReaction(post.id, userId, emoji)
     } catch (err) {
       console.error(err)
-      setReactions(post.feed_reactions ?? []) // revert
+      setReactions(post.feed_reactions ?? [])
     }
   }
 
@@ -105,10 +155,13 @@ export default function FeedCard({ post, isAdmin, userId, onDeleted }) {
       </div>
 
       {/* Reactions */}
-      <div className="px-3 pt-2.5 pb-1" ref={pickerRef}>
+      <div className="px-3 pt-2.5 pb-1">
         {/* Emoji picker pill */}
         {pickerOpen && (
-          <div className="flex items-center gap-0.5 bg-[#111827] border border-white/10 rounded-full px-2 py-1 w-fit mb-2 shadow-lg">
+          <div
+            className="flex items-center gap-0.5 bg-[#111827] border border-white/10 rounded-full px-2 py-1 w-fit mb-2 shadow-lg"
+            onMouseLeave={() => setPickerOpen(false)}
+          >
             {EMOJIS.map(e => (
               <button
                 key={e}
@@ -126,7 +179,7 @@ export default function FeedCard({ post, isAdmin, userId, onDeleted }) {
           {sortedReactions.map(([emoji, { count, reacted }]) => (
             <button
               key={emoji}
-              onClick={() => handleReact(emoji)}
+              onClick={() => reactions.length > 0 && setModalOpen(true)}
               className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-sm transition-colors active:scale-90 ${
                 reacted
                   ? 'bg-primary/15 border-primary/40'
@@ -168,6 +221,11 @@ export default function FeedCard({ post, isAdmin, userId, onDeleted }) {
           </span>
         </button>
       </div>
+
+      {/* Reaction list modal */}
+      {modalOpen && reactions.length > 0 && (
+        <ReactionListModal reactions={reactions} onClose={() => setModalOpen(false)} />
+      )}
     </div>
   )
 }
