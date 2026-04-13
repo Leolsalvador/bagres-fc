@@ -213,9 +213,10 @@ export async function saveDrawToDb(rodadaId, teams) {
       .single()
     if (error) throw error
 
-    const jogadores = team.players
-      .filter(p => p?.id)  // convidados não têm usuario_id, skip
-      .map(p => ({ time_id: t.id, usuario_id: p.id }))
+    const jogadores = team.players.map(p => p?.id
+      ? { time_id: t.id, usuario_id: p.id }
+      : { time_id: t.id, usuario_id: null, is_guest: true, guest_nome: p.nome, guest_rating: p.rating ?? null, guest_posicao_campo: p.posicao_campo ?? null }
+    )
     if (jogadores.length > 0) {
       await supabase.from('time_jogadores').insert(jogadores)
     }
@@ -228,19 +229,27 @@ export async function fetchTeams(rodadaId) {
   if (USE_MOCK) return null
   const { data, error } = await supabase
     .from('times')
-    .select(`id, numero, nome, time_jogadores(profiles(${PROFILE_FIELDS}))`)
+    .select(`id, numero, nome, time_jogadores(usuario_id, is_guest, guest_nome, guest_rating, guest_posicao_campo, profiles(${PROFILE_FIELDS}))`)
     .eq('rodada_id', rodadaId)
     .order('numero')
   if (error) throw error
   if (!data?.length) return null
 
-  return data.map(t => ({
-    id: t.id,
-    numero: t.numero,
-    nome: t.nome,
-    players: t.time_jogadores.map(tj => tj.profiles),
-    ratingMedio: t.time_jogadores.reduce((s, tj) => s + (tj.profiles?.rating ?? 0), 0) / t.time_jogadores.length,
-  }))
+  return data.map(t => {
+    const players = t.time_jogadores.map(tj => tj.is_guest
+      ? { id: null, nome: tj.guest_nome, rating: tj.guest_rating ?? 0, posicao_campo: tj.guest_posicao_campo }
+      : tj.profiles
+    )
+    return {
+      id: t.id,
+      numero: t.numero,
+      nome: t.nome,
+      players,
+      ratingMedio: players.length
+        ? players.reduce((s, p) => s + (p?.rating ?? 0), 0) / players.length
+        : 0,
+    }
+  })
 }
 
 // ─── PARTIDAS ───────────────────────────────────────────────
@@ -267,9 +276,11 @@ export async function savePartida(rodadaId, teams, result) {
   if (pErr) throw pErr
 
   const events = result.events ?? []
-  if (events.length > 0) {
+  // Salva apenas eventos de jogadores reais (convidados não têm usuario_id)
+  const realEvents = events.filter(ev => ev.player?.id)
+  if (realEvents.length > 0) {
     await supabase.from('eventos').insert(
-      events.map(ev => ({
+      realEvents.map(ev => ({
         partida_id: partida.id,
         usuario_id: ev.player.id,
         tipo: ev.type === 'gol' ? 'gol' : 'assistencia',
@@ -279,8 +290,9 @@ export async function savePartida(rodadaId, teams, result) {
   }
 
   // Atualiza gols e assistências via RPC (security definer contorna RLS)
+  // Apenas jogadores reais têm stats no banco
   const statsMap = {}
-  events.forEach(ev => {
+  realEvents.forEach(ev => {
     const id = ev.player.id
     if (!statsMap[id]) statsMap[id] = { gols: 0, assistencias: 0 }
     if (ev.type === 'gol') statsMap[id].gols++
@@ -348,8 +360,8 @@ export async function finalizeRodada(rodadaId, matchHistory, presencas) {
     garcom_id: garcom?.id ?? null,
   })
 
-  // Incrementa gols, assistências e jogos para os 20 da lista principal
-  const lista = presencas.filter(p => p.posicao <= 20)
+  // Incrementa gols, assistências e jogos apenas para jogadores reais da lista principal
+  const lista = presencas.filter(p => p.posicao <= 20 && !p.is_guest && p.usuario_id)
   await Promise.all(
     lista.map(p =>
       supabase.rpc('increment_player_stats', {

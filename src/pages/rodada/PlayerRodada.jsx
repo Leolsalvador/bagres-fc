@@ -283,15 +283,16 @@ function PresencaRow({ presenca: p, position, userId, isQueue = false, onNavigat
 function PlayerRoundSummary({ matchHistory, teams }) {
   const allEvents = matchHistory.flatMap(m => m.events ?? [])
 
+  // Artilheiro e Garçom apenas para jogadores reais (convidados não computam)
   const goalMap = {}
-  allEvents.filter(e => e.type === 'gol').forEach(e => {
+  allEvents.filter(e => e.type === 'gol' && e.player?.id).forEach(e => {
     const key = e.player.id
     goalMap[key] = { player: e.player, count: (goalMap[key]?.count ?? 0) + 1 }
   })
   const artilheiro = Object.values(goalMap).sort((a, b) => b.count - a.count)[0]
 
   const assistMap = {}
-  allEvents.filter(e => e.type === 'assistencia').forEach(e => {
+  allEvents.filter(e => e.type === 'assistencia' && e.player?.id).forEach(e => {
     const key = e.player.id
     assistMap[key] = { player: e.player, count: (assistMap[key]?.count ?? 0) + 1 }
   })

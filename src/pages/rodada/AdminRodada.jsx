@@ -522,17 +522,17 @@ function ActionBtn({ onClick, color, icon, label }) {
 function RoundSummary({ matchHistory }) {
   const allEvents = matchHistory.flatMap(m => m.events ?? [])
 
-  // Artilheiro
+  // Artilheiro (apenas jogadores reais, convidados não computam)
   const goalMap = {}
-  allEvents.filter(e => e.type === 'gol').forEach(e => {
+  allEvents.filter(e => e.type === 'gol' && e.player?.id).forEach(e => {
     const key = e.player.id
     goalMap[key] = { player: e.player, count: (goalMap[key]?.count ?? 0) + 1 }
   })
   const artilheiro = Object.values(goalMap).sort((a, b) => b.count - a.count)[0]
 
-  // Garçom
+  // Garçom (apenas jogadores reais)
   const assistMap = {}
-  allEvents.filter(e => e.type === 'assistencia').forEach(e => {
+  allEvents.filter(e => e.type === 'assistencia' && e.player?.id).forEach(e => {
     const key = e.player.id
     assistMap[key] = { player: e.player, count: (assistMap[key]?.count ?? 0) + 1 }
   })
