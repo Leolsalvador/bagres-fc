@@ -243,7 +243,7 @@ export function RodadaProvider({ children }) {
     setPresencas(ps => [...ps, temp])
 
     try {
-      const real = await insertGuestPresenca(rodada.id, { nome, posicao_campo, rating }, posicao, userId)
+      const real = await insertGuestPresenca(rodada.id, { nome, posicao_campo, rating }, posicao, userId, profile.nome)
       setPresencas(ps => ps.map(p => p.id === temp.id ? real : p))
     } catch (err) {
       setPresencas(ps => ps.filter(p => p.id !== temp.id))

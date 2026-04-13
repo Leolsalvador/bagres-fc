@@ -128,9 +128,9 @@ export async function updateRodadaStatus(rodadaId, status, extra = {}) {
 }
 
 // ─── PRESENÇAS ──────────────────────────────────────────────
-// Após adicionar coluna convidado_por (2ª FK para profiles), é necessário
-// disambiguar ambas as FKs explicitamente no select.
-const PRESENCA_SELECT = `*, profiles!usuario_id(${PROFILE_FIELDS}), inviter:profiles!convidado_por(id, nome)`
+// convidado_por não tem FK constraint no banco, então o inviter é resolvido
+// no lado do código após o fetch, cruzando usuario_id com convidado_por.
+const PRESENCA_SELECT = `*, profiles!usuario_id(${PROFILE_FIELDS})`
 
 export async function fetchPresencas(rodadaId) {
   if (USE_MOCK) return mockPresencas
@@ -140,7 +140,13 @@ export async function fetchPresencas(rodadaId) {
     .eq('rodada_id', rodadaId)
     .order('posicao')
   if (error) throw error
-  return data ?? []
+
+  const list = data ?? []
+  const byUserId = new Map(list.map(p => [p.usuario_id, p.profiles?.nome]))
+  return list.map(p => ({
+    ...p,
+    inviter: p.convidado_por ? { id: p.convidado_por, nome: byUserId.get(p.convidado_por) ?? null } : null,
+  }))
 }
 
 export async function insertPresenca(rodadaId, usuarioId, posicao, status) {
@@ -153,7 +159,7 @@ export async function insertPresenca(rodadaId, usuarioId, posicao, status) {
   return data
 }
 
-export async function insertGuestPresenca(rodadaId, { nome, posicao_campo, rating }, posicao, convidadoPor) {
+export async function insertGuestPresenca(rodadaId, { nome, posicao_campo, rating }, posicao, convidadoPor, inviterNome) {
   const status = posicao <= 20 ? 'confirmado' : 'espera'
   const { data, error } = await supabase
     .from('presencas')
@@ -171,7 +177,10 @@ export async function insertGuestPresenca(rodadaId, { nome, posicao_campo, ratin
     .select(PRESENCA_SELECT)
     .single()
   if (error) throw error
-  return data
+  return {
+    ...data,
+    inviter: convidadoPor ? { id: convidadoPor, nome: inviterNome ?? null } : null,
+  }
 }
 
 export async function deletePresenca(presencaId) {
