@@ -214,7 +214,7 @@ export async function saveDrawToDb(rodadaId, teams) {
     if (error) throw error
 
     const jogadores = team.players.map(p => p?.id
-      ? { time_id: t.id, usuario_id: p.id }
+      ? { time_id: t.id, usuario_id: p.id, is_guest: false }
       : { time_id: t.id, usuario_id: null, is_guest: true, guest_nome: p.nome, guest_rating: p.rating ?? null, guest_posicao_campo: p.posicao_campo ?? null }
     )
     if (jogadores.length > 0) {
