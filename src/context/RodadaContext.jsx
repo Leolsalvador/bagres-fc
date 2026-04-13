@@ -363,7 +363,10 @@ export function RodadaProvider({ children }) {
   async function performDraw() {
     if (!rodada) return
     const lista = presencas.filter(p => p.posicao <= 20).sort((a, b) => a.posicao - b.posicao)
-    const players = lista.map(p => p.profiles)
+    const players = lista.map(p => p.is_guest
+      ? { id: null, nome: p.guest_nome, posicao_campo: p.guest_posicao_campo, rating: p.guest_rating ?? 0 }
+      : p.profiles
+    )
     const drawn = drawTeams(players)
 
     setTeams(drawn)

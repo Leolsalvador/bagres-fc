@@ -213,9 +213,12 @@ export async function saveDrawToDb(rodadaId, teams) {
       .single()
     if (error) throw error
 
-    await supabase.from('time_jogadores').insert(
-      team.players.map(p => ({ time_id: t.id, usuario_id: p.id }))
-    )
+    const jogadores = team.players
+      .filter(p => p?.id)  // convidados não têm usuario_id, skip
+      .map(p => ({ time_id: t.id, usuario_id: p.id }))
+    if (jogadores.length > 0) {
+      await supabase.from('time_jogadores').insert(jogadores)
+    }
     saved.push({ ...team, id: t.id })
   }
   return saved
