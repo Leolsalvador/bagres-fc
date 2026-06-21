@@ -214,7 +214,9 @@ function RodadaCard({ rodada: r }) {
             const scorers   = m.events?.filter(e => e.type === 'gol')         ?? []
             const assisters = m.events?.filter(e => e.type === 'assistencia') ?? []
             const isExpanded = expandedMatch === i
-            const hasEvents = scorers.length > 0 || assisters.length > 0
+            const totalGoals = (m.goalsA ?? 0) + (m.goalsB ?? 0)
+            const unattributed = Math.max(0, totalGoals - scorers.length)
+            const hasEvents = totalGoals > 0 || assisters.length > 0
             return (
               <div key={i} className="rounded-xl overflow-hidden">
                 <button
@@ -244,10 +246,13 @@ function RodadaCard({ rodada: r }) {
                 {isExpanded && (
                   <div className="bg-elevated rounded-xl px-3 py-2 space-y-1 mb-1">
                     {scorers.map((e, j) => (
-                      <p key={j} className="text-xs text-text-main">⚽ {e.player?.nome ?? '?'}</p>
+                      <p key={j} className="text-xs text-text-main">⚽ {e.player?.nome ?? 'Convidado'}</p>
+                    ))}
+                    {[...Array(unattributed)].map((_, j) => (
+                      <p key={`guest-${j}`} className="text-xs text-text-muted italic">⚽ Convidado</p>
                     ))}
                     {assisters.map((e, j) => (
-                      <p key={j} className="text-xs text-text-muted">🅰️ {e.player?.nome ?? '?'}</p>
+                      <p key={j} className="text-xs text-text-muted">🅰️ {e.player?.nome ?? 'Convidado'}</p>
                     ))}
                   </div>
                 )}

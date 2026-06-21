@@ -650,7 +650,9 @@ function RoundSummary({ matchHistory, teams }) {
             const isOpen = expandedMatch === i
             const goals   = (m.events ?? []).filter(e => e.type === 'gol')
             const assists = (m.events ?? []).filter(e => e.type === 'assistencia')
-            const hasEvents = goals.length > 0 || assists.length > 0
+            const totalGoals = (m.goalsA ?? 0) + (m.goalsB ?? 0)
+            const unattributed = Math.max(0, totalGoals - goals.length)
+            const hasEvents = totalGoals > 0 || assists.length > 0
             return (
               <div key={i} className="bg-card rounded-2xl overflow-hidden">
                 <button
@@ -675,6 +677,12 @@ function RoundSummary({ matchHistory, teams }) {
                         <span className="text-xs">⚽</span>
                         <span className="text-text-main text-xs font-medium">{e.player?.nome ?? 'Convidado'}</span>
                         {e.minute != null && <span className="text-text-muted text-xs">{e.minute}'</span>}
+                      </div>
+                    ))}
+                    {[...Array(unattributed)].map((_, j) => (
+                      <div key={`guest-${j}`} className="flex items-center gap-2">
+                        <span className="text-xs">⚽</span>
+                        <span className="text-text-muted text-xs italic">Convidado</span>
                       </div>
                     ))}
                     {assists.map((e, j) => (
