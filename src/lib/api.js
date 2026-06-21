@@ -289,25 +289,6 @@ export async function savePartida(rodadaId, teams, result) {
     )
   }
 
-  // Atualiza gols e assistências via RPC (security definer contorna RLS)
-  // Apenas jogadores reais têm stats no banco
-  const statsMap = {}
-  realEvents.forEach(ev => {
-    const id = ev.player.id
-    if (!statsMap[id]) statsMap[id] = { gols: 0, assistencias: 0 }
-    if (ev.type === 'gol') statsMap[id].gols++
-    else statsMap[id].assistencias++
-  })
-  await Promise.all(
-    Object.entries(statsMap).map(([uid, s]) =>
-      supabase.rpc('increment_player_stats', {
-        player_id: uid,
-        gols_add: s.gols,
-        assistencias_add: s.assistencias,
-        jogos_add: 0,
-      })
-    )
-  )
 }
 
 export async function fetchMatchHistory(rodadaId) {
@@ -503,7 +484,8 @@ export async function fetchRodadasEncerradas() {
       partidas(
         gols_a, gols_b, vencedor_id,
         time_a:time_a_id(id, nome),
-        time_b:time_b_id(id, nome)
+        time_b:time_b_id(id, nome),
+        eventos(tipo, profiles:usuario_id(id, nome, foto_url))
       )
     `)
     .eq('status', 'encerrada')
@@ -523,6 +505,7 @@ export async function fetchRodadasEncerradas() {
       goalsA: p.gols_a,
       goalsB: p.gols_b,
       winner: !p.vencedor_id ? 'draw' : p.vencedor_id === p.time_a?.id ? 'A' : 'B',
+      events: (p.eventos ?? []).map(e => ({ type: e.tipo, player: e.profiles })),
     })),
   }))
 }

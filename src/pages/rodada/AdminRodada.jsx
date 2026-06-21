@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Check, X, Trash2, Shuffle, Play, LogIn, XCircle, ChevronRight, UserPlus, ArrowUp } from 'lucide-react'
+import { Check, X, Trash2, Shuffle, Play, LogIn, XCircle, ChevronRight, ChevronDown, UserPlus, ArrowUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useRodada } from '@/context/RodadaContext'
 import { useAuth } from '@/hooks/useAuth'
@@ -417,7 +417,7 @@ export default function AdminRodada() {
           >
             + Nova Rodada
           </button>
-          <RoundSummary matchHistory={matchHistory} />
+          <RoundSummary matchHistory={matchHistory} teams={teams} />
           <VotacaoRodada lista={lista} />
         </div>
       )}
@@ -519,7 +519,9 @@ function ActionBtn({ onClick, color, icon, label }) {
 }
 
 // ── Resumo da Rodada ─────────────────────────────────────────
-function RoundSummary({ matchHistory }) {
+function RoundSummary({ matchHistory, teams }) {
+  const [expandedMatch, setExpandedMatch] = useState(null)
+  const { profile } = useAuth()
   const allEvents = matchHistory.flatMap(m => m.events ?? [])
 
   // Artilheiro (apenas jogadores reais, convidados não computam)
@@ -555,6 +557,16 @@ function RoundSummary({ matchHistory }) {
 
   const totalGols = allEvents.filter(e => e.type === 'gol').length
 
+  // Stats pessoais do usuário logado nesta rodada
+  const myId      = profile?.id
+  const myGoals   = allEvents.filter(e => e.type === 'gol'         && e.player?.id === myId).length
+  const myAssists = allEvents.filter(e => e.type === 'assistencia' && e.player?.id === myId).length
+  const myTeam    = teams?.find(t => t.players?.some(p => p?.id === myId))
+  const myMatches = myTeam
+    ? matchHistory.filter(m => m.teamA.nome === myTeam.nome || m.teamB.nome === myTeam.nome).length
+    : 0
+  const iPlayed = !!myTeam
+
   return (
     <div className="space-y-4">
       {/* Banner */}
@@ -569,6 +581,25 @@ function RoundSummary({ matchHistory }) {
       <p className="text-text-muted text-xs font-semibold uppercase tracking-wider">Destaques</p>
 
       <div className="space-y-3">
+        {iPlayed && (
+          <div className="bg-card rounded-2xl p-4">
+            <p className="text-text-muted text-xs font-semibold uppercase tracking-wider mb-3">Sua Rodada</p>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-elevated rounded-xl p-3 text-center">
+                <p className="text-2xl font-black text-primary">{myGoals}</p>
+                <p className="text-text-muted text-[10px] mt-0.5">⚽ gols</p>
+              </div>
+              <div className="bg-elevated rounded-xl p-3 text-center">
+                <p className="text-2xl font-black text-secondary">{myAssists}</p>
+                <p className="text-text-muted text-[10px] mt-0.5">🅰️ assists</p>
+              </div>
+              <div className="bg-elevated rounded-xl p-3 text-center">
+                <p className="text-2xl font-black text-text-main">{myMatches}</p>
+                <p className="text-text-muted text-[10px] mt-0.5">🏃 partidas</p>
+              </div>
+            </div>
+          </div>
+        )}
         {artilheiro && (
           <DestaquCard
             emoji="⚽"
@@ -587,15 +618,25 @@ function RoundSummary({ matchHistory }) {
             color="text-secondary"
           />
         )}
-        {timeDaRodada && (
-          <DestaquCard
-            emoji="🏆"
-            label="Time da Rodada"
-            nome={timeDaRodada.nome}
-            detalhe={`${timeDaRodada.vitorias} vitória${timeDaRodada.vitorias !== 1 ? 's' : ''}`}
-            color="text-secondary"
-          />
-        )}
+        {timeDaRodada && (() => {
+          const winnerTeam = teams?.find(t => t.nome === timeDaRodada.nome)
+          const winnerIdx  = teams?.findIndex(t => t.nome === timeDaRodada.nome) ?? 0
+          return (
+            <div className="bg-card rounded-2xl overflow-hidden">
+              <div className="px-4 pt-4 pb-2 flex items-center gap-3">
+                <span className="text-2xl shrink-0">🏆</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-text-muted text-xs font-semibold uppercase tracking-wider">Time da Rodada</p>
+                  <p className="text-secondary font-black text-base truncate">{timeDaRodada.nome}</p>
+                </div>
+                <span className="text-text-muted text-sm font-semibold shrink-0">
+                  {timeDaRodada.vitorias} vitória{timeDaRodada.vitorias !== 1 ? 's' : ''}
+                </span>
+              </div>
+              {winnerTeam && <TeamField team={winnerTeam} colorIndex={winnerIdx} />}
+            </div>
+          )
+        })()}
         {!artilheiro && !garcom && !timeDaRodada && (
           <p className="text-text-muted text-sm text-center py-4">Nenhuma partida registrada.</p>
         )}
@@ -605,19 +646,93 @@ function RoundSummary({ matchHistory }) {
       {matchHistory.length > 0 && (
         <>
           <p className="text-text-muted text-xs font-semibold uppercase tracking-wider">Partidas</p>
-          {matchHistory.map((m, i) => (
-            <div key={i} className="bg-card rounded-2xl px-4 py-3 flex items-center justify-between">
-              <p className="text-text-main text-sm font-semibold flex-1 truncate">{m.teamA.nome}</p>
-              <div className="flex items-center gap-2 shrink-0 mx-2">
-                <span className="text-text-main font-black">{m.goalsA}</span>
-                <span className="text-text-muted text-xs">×</span>
-                <span className="text-text-main font-black">{m.goalsB}</span>
+          {matchHistory.map((m, i) => {
+            const isOpen = expandedMatch === i
+            const goals   = (m.events ?? []).filter(e => e.type === 'gol')
+            const assists = (m.events ?? []).filter(e => e.type === 'assistencia')
+            const hasEvents = goals.length > 0 || assists.length > 0
+            return (
+              <div key={i} className="bg-card rounded-2xl overflow-hidden">
+                <button
+                  onClick={() => hasEvents && setExpandedMatch(isOpen ? null : i)}
+                  className="w-full px-4 py-3 flex items-center"
+                >
+                  <p className="text-text-main text-sm font-semibold flex-1 truncate text-left">{m.teamA.nome}</p>
+                  <div className="flex items-center gap-2 shrink-0 mx-2">
+                    <span className="text-text-main font-black">{m.goalsA}</span>
+                    <span className="text-text-muted text-xs">×</span>
+                    <span className="text-text-main font-black">{m.goalsB}</span>
+                  </div>
+                  <p className="text-text-main text-sm font-semibold flex-1 truncate text-right">{m.teamB.nome}</p>
+                  {hasEvents && (
+                    <ChevronDown size={14} className={cn('text-text-muted ml-2 shrink-0 transition-transform duration-200', isOpen && 'rotate-180')} />
+                  )}
+                </button>
+                {isOpen && (
+                  <div className="px-4 pb-3 pt-1 border-t border-border space-y-1.5">
+                    {goals.map((e, j) => (
+                      <div key={j} className="flex items-center gap-2">
+                        <span className="text-xs">⚽</span>
+                        <span className="text-text-main text-xs font-medium">{e.player?.nome ?? 'Convidado'}</span>
+                        {e.minute != null && <span className="text-text-muted text-xs">{e.minute}'</span>}
+                      </div>
+                    ))}
+                    {assists.map((e, j) => (
+                      <div key={j} className="flex items-center gap-2">
+                        <span className="text-xs">🅰️</span>
+                        <span className="text-text-muted text-xs">{e.player?.nome ?? 'Convidado'}</span>
+                        {e.minute != null && <span className="text-text-muted text-xs">{e.minute}'</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <p className="text-text-main text-sm font-semibold flex-1 truncate text-right">{m.teamB.nome}</p>
-            </div>
-          ))}
+            )
+          })}
         </>
       )}
+    </div>
+  )
+}
+
+const FIELD_COLORS = [
+  { playerBorder: 'border-blue-400'   },
+  { playerBorder: 'border-red-400'    },
+  { playerBorder: 'border-yellow-400' },
+  { playerBorder: 'border-green-400'  },
+]
+
+function TeamField({ team, colorIndex }) {
+  const color = FIELD_COLORS[colorIndex % FIELD_COLORS.length]
+  const players = team.players ?? []
+  const rows = [[players[0], players[1]], [players[2]], [players[3], players[4]]]
+
+  return (
+    <div className="mx-4 mb-4 rounded-xl overflow-hidden bg-green-900 relative" style={{ aspectRatio: '5/3' }}>
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full border border-white/20" />
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white/30" />
+        <div className="absolute top-0 bottom-0 left-[12%] border-l border-white/10" />
+        <div className="absolute top-0 bottom-0 right-[12%] border-r border-white/10" />
+      </div>
+      <div className="absolute inset-0 flex flex-col justify-around py-3">
+        {rows.map((row, ri) => (
+          <div key={ri} className={cn('flex px-6', row.length === 1 ? 'justify-center' : 'justify-around')}>
+            {row.filter(Boolean).map((p, pi) => (
+              <div key={p.id ?? pi} className="flex flex-col items-center gap-0.5">
+                <div className={cn('w-9 h-9 rounded-full border-2 overflow-hidden bg-green-800', color.playerBorder)}>
+                  {p.foto_url
+                    ? <img src={p.foto_url} alt={p.nome} className="w-full h-full object-contain" />
+                    : <div className="w-full h-full flex items-center justify-center text-sm">👤</div>}
+                </div>
+                <span className="text-white text-[9px] font-bold max-w-[40px] truncate text-center leading-tight drop-shadow">
+                  {p.nome?.split(' ')[0]}
+                </span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

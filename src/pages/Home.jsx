@@ -163,6 +163,7 @@ function PlayerCard({ player: p, rank, sortKey, onClick }) {
 
 function RodadaCard({ rodada: r }) {
   const [open, setOpen] = useState(false)
+  const [expandedMatch, setExpandedMatch] = useState(null)
 
   const dateLabel = new Date(r.data_jogo + 'T12:00:00').toLocaleDateString('pt-BR', {
     day: 'numeric', month: 'long', year: 'numeric',
@@ -209,20 +210,50 @@ function RodadaCard({ rodada: r }) {
 
           {/* Partidas */}
           <p className="text-text-muted text-[10px] font-semibold uppercase tracking-wider">Partidas</p>
-          {r.partidas.map((m, i) => (
-            <div key={i} className="flex items-center justify-between text-sm">
-              <p className="text-text-main flex-1 truncate">{m.teamA}</p>
-              <div className="flex items-center gap-1.5 mx-3 shrink-0">
-                <span className="text-text-main font-black">{m.goalsA}</span>
-                <span className="text-text-muted text-xs">×</span>
-                <span className="text-text-main font-black">{m.goalsB}</span>
-                {m.winner === 'draw'
-                  ? <Flag size={12} className="text-text-muted ml-1" />
-                  : <Trophy size={12} className="text-secondary ml-1" />}
+          {r.partidas.map((m, i) => {
+            const scorers   = m.events?.filter(e => e.type === 'gol')         ?? []
+            const assisters = m.events?.filter(e => e.type === 'assistencia') ?? []
+            const isExpanded = expandedMatch === i
+            const hasEvents = scorers.length > 0 || assisters.length > 0
+            return (
+              <div key={i} className="rounded-xl overflow-hidden">
+                <button
+                  onClick={() => hasEvents && setExpandedMatch(isExpanded ? null : i)}
+                  className={cn(
+                    'w-full flex items-center justify-between text-sm py-1.5',
+                    hasEvents && 'active:opacity-70 cursor-pointer'
+                  )}
+                >
+                  <p className="text-text-main flex-1 truncate text-left">{m.teamA}</p>
+                  <div className="flex items-center gap-1.5 mx-3 shrink-0">
+                    <span className="text-text-main font-black">{m.goalsA}</span>
+                    <span className="text-text-muted text-xs">×</span>
+                    <span className="text-text-main font-black">{m.goalsB}</span>
+                    {m.winner === 'draw'
+                      ? <Flag size={12} className="text-text-muted ml-1" />
+                      : <Trophy size={12} className="text-secondary ml-1" />}
+                    {hasEvents && (
+                      isExpanded
+                        ? <ChevronUp size={12} className="text-text-muted ml-1" />
+                        : <ChevronDown size={12} className="text-text-muted ml-1" />
+                    )}
+                  </div>
+                  <p className="text-text-main flex-1 truncate text-right">{m.teamB}</p>
+                </button>
+
+                {isExpanded && (
+                  <div className="bg-elevated rounded-xl px-3 py-2 space-y-1 mb-1">
+                    {scorers.map((e, j) => (
+                      <p key={j} className="text-xs text-text-main">⚽ {e.player?.nome ?? '?'}</p>
+                    ))}
+                    {assisters.map((e, j) => (
+                      <p key={j} className="text-xs text-text-muted">🅰️ {e.player?.nome ?? '?'}</p>
+                    ))}
+                  </div>
+                )}
               </div>
-              <p className="text-text-main flex-1 truncate text-right">{m.teamB}</p>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

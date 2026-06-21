@@ -281,6 +281,7 @@ function PresencaRow({ presenca: p, position, userId, isQueue = false, onNavigat
 }
 
 function PlayerRoundSummary({ matchHistory, teams }) {
+  const { profile } = useAuth()
   const allEvents = matchHistory.flatMap(m => m.events ?? [])
 
   // Artilheiro e Garçom apenas para jogadores reais (convidados não computam)
@@ -312,6 +313,15 @@ function PlayerRoundSummary({ matchHistory, teams }) {
     b.vitorias - a.vitorias || b.saldo - a.saldo
   )[0]
 
+  const myId      = profile?.id
+  const myGoals   = allEvents.filter(e => e.type === 'gol'         && e.player?.id === myId).length
+  const myAssists = allEvents.filter(e => e.type === 'assistencia' && e.player?.id === myId).length
+  const myTeam    = teams?.find(t => t.players?.some(p => p?.id === myId))
+  const myMatches = myTeam
+    ? matchHistory.filter(m => m.teamA.nome === myTeam.nome || m.teamB.nome === myTeam.nome).length
+    : 0
+  const iPlayed = !!myTeam
+
   return (
     <div className="space-y-4">
       <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 text-center">
@@ -324,6 +334,25 @@ function PlayerRoundSummary({ matchHistory, teams }) {
         <>
           <p className="text-text-muted text-xs font-semibold uppercase tracking-wider">Destaques</p>
           <div className="space-y-3">
+            {iPlayed && (
+              <div className="bg-card rounded-2xl p-4">
+                <p className="text-text-muted text-xs font-semibold uppercase tracking-wider mb-3">Sua Rodada</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-elevated rounded-xl p-3 text-center">
+                    <p className="text-2xl font-black text-primary">{myGoals}</p>
+                    <p className="text-text-muted text-[10px] mt-0.5">⚽ gols</p>
+                  </div>
+                  <div className="bg-elevated rounded-xl p-3 text-center">
+                    <p className="text-2xl font-black text-secondary">{myAssists}</p>
+                    <p className="text-text-muted text-[10px] mt-0.5">🅰️ assists</p>
+                  </div>
+                  <div className="bg-elevated rounded-xl p-3 text-center">
+                    <p className="text-2xl font-black text-text-main">{myMatches}</p>
+                    <p className="text-text-muted text-[10px] mt-0.5">🏃 partidas</p>
+                  </div>
+                </div>
+              </div>
+            )}
             {artilheiro && (
               <div className="bg-card rounded-2xl p-4 flex items-center gap-4">
                 <span className="text-2xl">⚽</span>
