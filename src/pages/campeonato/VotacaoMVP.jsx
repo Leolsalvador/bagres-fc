@@ -363,14 +363,34 @@ export default function VotacaoMVP() {
 // ── Live match view (read-only for non-admin) ─────────────────
 function LiveMatchView({ partida, timeCasa, timeVisitante, jogadoresCasa, jogadoresVisitante, eventosPartida }) {
   const [liveSeconds, setLiveSeconds] = useState(null)
+  const [liveEndTs, setLiveEndTs] = useState(partida.timer_end_ts)
+  const [livePausedSecs, setLivePausedSecs] = useState(partida.timer_paused_secs)
   const intervalRef = useRef(null)
 
-  // Sync timer from DB values (updated via realtime)
+  // Fetch fresh data on mount so we don't rely on potentially stale context
+  useEffect(() => {
+    if (USE_MOCK || !partida.id) return
+    supabase.from('campeonato_partidas')
+      .select('timer_end_ts, timer_paused_secs')
+      .eq('id', partida.id)
+      .single()
+      .then(({ data }) => {
+        if (!data) return
+        setLiveEndTs(data.timer_end_ts)
+        setLivePausedSecs(data.timer_paused_secs)
+      })
+  }, [partida.id]) // eslint-disable-line
+
+  // Keep live state in sync when context updates via realtime
+  useEffect(() => { setLiveEndTs(partida.timer_end_ts) }, [partida.timer_end_ts])
+  useEffect(() => { setLivePausedSecs(partida.timer_paused_secs) }, [partida.timer_paused_secs])
+
+  // Sync timer from DB values
   useEffect(() => {
     clearInterval(intervalRef.current)
 
-    if (partida.timer_end_ts) {
-      const endTs = new Date(partida.timer_end_ts).getTime()
+    if (liveEndTs) {
+      const endTs = new Date(liveEndTs).getTime()
       const initial = Math.max(0, Math.round((endTs - Date.now()) / 1000))
       setLiveSeconds(initial)
       if (initial > 0) {
@@ -380,16 +400,16 @@ function LiveMatchView({ partida, timeCasa, timeVisitante, jogadoresCasa, jogado
           if (r <= 0) clearInterval(intervalRef.current)
         }, 500)
       }
-    } else if (partida.timer_paused_secs != null) {
-      setLiveSeconds(partida.timer_paused_secs)
+    } else if (livePausedSecs != null) {
+      setLiveSeconds(livePausedSecs)
     } else {
       setLiveSeconds(null)
     }
 
     return () => clearInterval(intervalRef.current)
-  }, [partida.timer_end_ts, partida.timer_paused_secs]) // eslint-disable-line
+  }, [liveEndTs, livePausedSecs])
 
-  const isTimerRunning = !!partida.timer_end_ts
+  const isTimerRunning = !!liveEndTs && liveSeconds > 0
   const half = partida.half_atual
 
   const golEvents = eventosPartida.filter(e => e.tipo === 'gol')

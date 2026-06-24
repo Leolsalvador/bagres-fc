@@ -270,6 +270,7 @@ function PartidaControle({ partida: initialPartida, jogadores, times, eventosIni
         setSeconds(0)
         setTimeExpired(true)
         playBeep()
+        saveTimer(null, 0)
       } else {
         setSeconds(remaining)
       }
