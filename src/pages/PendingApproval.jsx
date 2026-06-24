@@ -1,5 +1,5 @@
-import { Clock, LogOut } from 'lucide-react'
-import { useEffect } from 'react'
+import { Clock, LogOut, RefreshCw } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
@@ -7,6 +7,8 @@ import { supabase } from '@/lib/supabase'
 export default function PendingApproval() {
   const { signOut, profile, user, refreshProfile } = useAuth()
   const navigate = useNavigate()
+  const [checking, setChecking] = useState(false)
+  const [dbStatus, setDbStatus] = useState(null)
 
   useEffect(() => {
     if (!user) navigate('/login', { replace: true })
@@ -16,19 +18,28 @@ export default function PendingApproval() {
     if (profile?.status === 'aprovado') navigate('/home', { replace: true })
   }, [profile, navigate])
 
-  // Polling a cada 5s — atualiza o contexto antes de navegar para o ProtectedRoute não rejeitar
+  // Polling a cada 5s
   useEffect(() => {
     const uid = user?.id
     if (!uid) return
-    const interval = setInterval(async () => {
-      const { data } = await supabase.from('profiles').select('status').eq('id', uid).single()
-      if (data?.status === 'aprovado') {
-        await refreshProfile()
-        navigate('/home', { replace: true })
-      }
-    }, 5000)
+    const interval = setInterval(() => checkAndRedirect(uid), 5000)
     return () => clearInterval(interval)
-  }, [user?.id, navigate, refreshProfile])
+  }, [user?.id]) // eslint-disable-line
+
+  async function checkAndRedirect(uid) {
+    const { data } = await supabase.from('profiles').select('status').eq('id', uid).single()
+    setDbStatus(data?.status ?? 'erro ao buscar')
+    if (data?.status === 'aprovado') {
+      await refreshProfile()
+      navigate('/home', { replace: true })
+    }
+  }
+
+  async function handleCheckManual() {
+    setChecking(true)
+    await checkAndRedirect(user?.id)
+    setChecking(false)
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
@@ -51,9 +62,22 @@ export default function PendingApproval() {
         </p>
       </div>
 
+      {dbStatus && (
+        <p className="mt-3 text-xs text-text-muted">Status no banco: <span className="font-bold text-text-main">{dbStatus}</span></p>
+      )}
+
+      <button
+        onClick={handleCheckManual}
+        disabled={checking}
+        className="mt-6 flex items-center gap-2 text-primary text-sm font-semibold active:scale-95 transition-transform disabled:opacity-50"
+      >
+        <RefreshCw size={15} className={checking ? 'animate-spin' : ''} />
+        {checking ? 'Verificando...' : 'Verificar aprovação'}
+      </button>
+
       <button
         onClick={signOut}
-        className="mt-10 flex items-center gap-2 text-text-muted text-sm active:scale-95 transition-transform"
+        className="mt-6 flex items-center gap-2 text-text-muted text-sm active:scale-95 transition-transform"
       >
         <LogOut size={16} />
         Sair da conta
