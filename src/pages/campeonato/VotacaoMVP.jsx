@@ -398,7 +398,7 @@ function LiveMatchView({ partida, timeCasa, timeVisitante, jogadoresCasa, jogado
           const r = Math.max(0, Math.round((endTs - Date.now()) / 1000))
           setLiveSeconds(r)
           if (r <= 0) clearInterval(intervalRef.current)
-        }, 500)
+        }, 60000)
       }
     } else if (livePausedSecs != null) {
       setLiveSeconds(livePausedSecs)
@@ -446,14 +446,16 @@ function LiveMatchView({ partida, timeCasa, timeVisitante, jogadoresCasa, jogado
           </p>
         </div>
 
-        {/* Timer display (read-only) */}
+        {/* Timer display (read-only) — shows minutes only, updates every 60s */}
         {liveSeconds !== null && (
           <div className="flex items-center justify-center gap-2 mt-2">
             {isTimerRunning
               ? <Play size={12} className="text-primary" />
               : <Pause size={12} className="text-text-muted" />}
             <span className={cn('font-black text-2xl tabular-nums tracking-tight', isTimerRunning ? 'text-text-main' : 'text-text-muted')}>
-              {formatTime(liveSeconds)}
+              {isTimerRunning
+                ? `${Math.ceil(liveSeconds / 60)} min`
+                : formatTime(liveSeconds)}
             </span>
           </div>
         )}
