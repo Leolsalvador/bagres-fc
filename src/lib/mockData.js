@@ -211,3 +211,160 @@ export const mockCiclo = {
   id: 'ciclo-mock-1',
   aberta: true,
 }
+
+// ─── Campeonato ───────────────────────────────────────────────
+const TIMES = {
+  'T-A1': { id: 'T-A1', campeonato_id: 'CAMP-1', nome: 'Feras do Bagre',  cor: '#EF4444', grupo: 'A' },
+  'T-A2': { id: 'T-A2', campeonato_id: 'CAMP-1', nome: 'Raios do Campo',  cor: '#3B82F6', grupo: 'A' },
+  'T-A3': { id: 'T-A3', campeonato_id: 'CAMP-1', nome: 'Trovões FC',      cor: '#F59E0B', grupo: 'A' },
+  'T-B1': { id: 'T-B1', campeonato_id: 'CAMP-1', nome: 'Cobras Negras',   cor: '#10B981', grupo: 'B' },
+  'T-B2': { id: 'T-B2', campeonato_id: 'CAMP-1', nome: 'Leões do Sul',    cor: '#8B5CF6', grupo: 'B' },
+  'T-B3': { id: 'T-B3', campeonato_id: 'CAMP-1', nome: 'Águias do Norte', cor: '#EC4899', grupo: 'B' },
+}
+
+const PLAYERS_SHORT = {
+  'u01': { id: 'u01', nome: 'Carlos Silva',       foto_url: null },
+  'u02': { id: 'u02', nome: 'João Santos',         foto_url: null },
+  'u03': { id: 'u03', nome: 'Pedro Oliveira',      foto_url: null },
+  'u04': { id: 'u04', nome: 'Lucas Costa',         foto_url: null },
+  'u05': { id: 'u05', nome: 'Gabriel Souza',       foto_url: null },
+  'u06': { id: 'u06', nome: 'Matheus Lima',        foto_url: null },
+  'u07': { id: 'u07', nome: 'Rafael Ferreira',     foto_url: null },
+  'u08': { id: 'u08', nome: 'André Rodrigues',     foto_url: null },
+  'u09': { id: 'u09', nome: 'Felipe Alves',        foto_url: null },
+  'u10': { id: 'u10', nome: 'Bruno Martins',       foto_url: null },
+  'u11': { id: 'u11', nome: 'Diego Pereira',       foto_url: null },
+  'u12': { id: 'u12', nome: 'Thiago Gomes',        foto_url: null },
+  'u13': { id: 'u13', nome: 'Leandro Ribeiro',     foto_url: null },
+  'u14': { id: 'u14', nome: 'Rodrigo Carvalho',    foto_url: null },
+  'u15': { id: 'u15', nome: 'Marcelo Nascimento',  foto_url: null },
+  'u16': { id: 'u16', nome: 'Gustavo Araújo',      foto_url: null },
+  'u17': { id: 'u17', nome: 'Vinícius Mendes',     foto_url: null },
+  'u18': { id: 'u18', nome: 'Eduardo Cardoso',     foto_url: null },
+  'u19': { id: 'u19', nome: 'Leonardo Barbosa',    foto_url: null },
+  'u20': { id: 'u20', nome: 'Henrique Moreira',    foto_url: null },
+  'u21': { id: 'u21', nome: 'Fábio Teixeira',      foto_url: null },
+  'u22': { id: 'u22', nome: 'Igor Nascimento',     foto_url: null },
+  'u-admin': { id: 'u-admin', nome: 'Leonardo Salvador', foto_url: null },
+}
+
+export const mockCampeonato = {
+  id: 'CAMP-1', nome: 'Copa Bagres #1',
+  status: 'em_andamento', visivel: true, fase_atual: 'grupos',
+  created_by: 'u-admin', created_at: '2026-06-01T10:00:00Z',
+}
+
+export const mockCampeonatoTimes = [
+  {
+    ...TIMES['T-A1'],
+    campeonato_time_jogadores: [
+      { jogador_id: 'u01', profiles: PLAYERS_SHORT['u01'] },
+      { jogador_id: 'u02', profiles: PLAYERS_SHORT['u02'] },
+      { jogador_id: 'u03', profiles: PLAYERS_SHORT['u03'] },
+      { jogador_id: 'u04', profiles: PLAYERS_SHORT['u04'] },
+    ],
+  },
+  {
+    ...TIMES['T-A2'],
+    campeonato_time_jogadores: [
+      { jogador_id: 'u05', profiles: PLAYERS_SHORT['u05'] },
+      { jogador_id: 'u06', profiles: PLAYERS_SHORT['u06'] },
+      { jogador_id: 'u07', profiles: PLAYERS_SHORT['u07'] },
+      { jogador_id: 'u08', profiles: PLAYERS_SHORT['u08'] },
+    ],
+  },
+  {
+    ...TIMES['T-A3'],
+    campeonato_time_jogadores: [
+      { jogador_id: 'u09', profiles: PLAYERS_SHORT['u09'] },
+      { jogador_id: 'u10', profiles: PLAYERS_SHORT['u10'] },
+      { jogador_id: 'u11', profiles: PLAYERS_SHORT['u11'] },
+      { jogador_id: 'u12', profiles: PLAYERS_SHORT['u12'] },
+    ],
+  },
+  {
+    ...TIMES['T-B1'],
+    campeonato_time_jogadores: [
+      { jogador_id: 'u13', profiles: PLAYERS_SHORT['u13'] },
+      { jogador_id: 'u14', profiles: PLAYERS_SHORT['u14'] },
+      { jogador_id: 'u15', profiles: PLAYERS_SHORT['u15'] },
+      { jogador_id: 'u16', profiles: PLAYERS_SHORT['u16'] },
+    ],
+  },
+  {
+    ...TIMES['T-B2'],
+    campeonato_time_jogadores: [
+      { jogador_id: 'u17', profiles: PLAYERS_SHORT['u17'] },
+      { jogador_id: 'u18', profiles: PLAYERS_SHORT['u18'] },
+      { jogador_id: 'u19', profiles: PLAYERS_SHORT['u19'] },
+      { jogador_id: 'u20', profiles: PLAYERS_SHORT['u20'] },
+    ],
+  },
+  {
+    ...TIMES['T-B3'],
+    campeonato_time_jogadores: [
+      { jogador_id: 'u21', profiles: PLAYERS_SHORT['u21'] },
+      { jogador_id: 'u22', profiles: PLAYERS_SHORT['u22'] },
+      { jogador_id: 'u-admin', profiles: PLAYERS_SHORT['u-admin'] },
+    ],
+  },
+]
+
+// Partidas: 6 encerradas, 1 ao vivo, 2 agendadas
+export const mockCampeonatoPartidas = [
+  // Rodada 1
+  { id: 'P01', campeonato_id: 'CAMP-1', fase: 'grupos', rodada_num: 1, ordem: 1, time_casa_id: 'T-A1', time_visitante_id: 'T-B1', gols_casa: 2, gols_visitante: 1, half_atual: 0, status: 'encerrada', votacao_mvp_aberta: false, mvp_id: 'u01', penaltis_casa: null, penaltis_visitante: null, time_casa: TIMES['T-A1'], time_visitante: TIMES['T-B1'], mvp: PLAYERS_SHORT['u01'] },
+  { id: 'P02', campeonato_id: 'CAMP-1', fase: 'grupos', rodada_num: 1, ordem: 2, time_casa_id: 'T-A2', time_visitante_id: 'T-B2', gols_casa: 1, gols_visitante: 1, half_atual: 0, status: 'encerrada', votacao_mvp_aberta: false, mvp_id: 'u17', penaltis_casa: null, penaltis_visitante: null, time_casa: TIMES['T-A2'], time_visitante: TIMES['T-B2'], mvp: PLAYERS_SHORT['u17'] },
+  { id: 'P03', campeonato_id: 'CAMP-1', fase: 'grupos', rodada_num: 1, ordem: 3, time_casa_id: 'T-A3', time_visitante_id: 'T-B3', gols_casa: 0, gols_visitante: 2, half_atual: 0, status: 'encerrada', votacao_mvp_aberta: false, mvp_id: 'u21', penaltis_casa: null, penaltis_visitante: null, time_casa: TIMES['T-A3'], time_visitante: TIMES['T-B3'], mvp: PLAYERS_SHORT['u21'] },
+  // Rodada 2
+  { id: 'P04', campeonato_id: 'CAMP-1', fase: 'grupos', rodada_num: 2, ordem: 4, time_casa_id: 'T-A1', time_visitante_id: 'T-B2', gols_casa: 3, gols_visitante: 0, half_atual: 0, status: 'encerrada', votacao_mvp_aberta: false, mvp_id: 'u01', penaltis_casa: null, penaltis_visitante: null, time_casa: TIMES['T-A1'], time_visitante: TIMES['T-B2'], mvp: PLAYERS_SHORT['u01'] },
+  { id: 'P05', campeonato_id: 'CAMP-1', fase: 'grupos', rodada_num: 2, ordem: 5, time_casa_id: 'T-A2', time_visitante_id: 'T-B3', gols_casa: 2, gols_visitante: 1, half_atual: 0, status: 'encerrada', votacao_mvp_aberta: true,  mvp_id: null,   penaltis_casa: null, penaltis_visitante: null, time_casa: TIMES['T-A2'], time_visitante: TIMES['T-B3'], mvp: null },
+  { id: 'P06', campeonato_id: 'CAMP-1', fase: 'grupos', rodada_num: 2, ordem: 6, time_casa_id: 'T-A3', time_visitante_id: 'T-B1', gols_casa: 1, gols_visitante: 2, half_atual: 0, status: 'encerrada', votacao_mvp_aberta: false, mvp_id: 'u13', penaltis_casa: null, penaltis_visitante: null, time_casa: TIMES['T-A3'], time_visitante: TIMES['T-B1'], mvp: PLAYERS_SHORT['u13'] },
+  // Rodada 3 — 1 ao vivo, 2 agendadas
+  { id: 'P07', campeonato_id: 'CAMP-1', fase: 'grupos', rodada_num: 3, ordem: 7, time_casa_id: 'T-A1', time_visitante_id: 'T-B3', gols_casa: 1, gols_visitante: 1, half_atual: 1, status: 'em_andamento', votacao_mvp_aberta: false, mvp_id: null, penaltis_casa: null, penaltis_visitante: null, timer_end_ts: null, timer_paused_secs: 180, time_casa: TIMES['T-A1'], time_visitante: TIMES['T-B3'], mvp: null },
+  { id: 'P08', campeonato_id: 'CAMP-1', fase: 'grupos', rodada_num: 3, ordem: 8, time_casa_id: 'T-A2', time_visitante_id: 'T-B1', gols_casa: 0, gols_visitante: 0, half_atual: 0, status: 'agendada',     votacao_mvp_aberta: false, mvp_id: null, penaltis_casa: null, penaltis_visitante: null, time_casa: TIMES['T-A2'], time_visitante: TIMES['T-B1'], mvp: null },
+  { id: 'P09', campeonato_id: 'CAMP-1', fase: 'grupos', rodada_num: 3, ordem: 9, time_casa_id: 'T-A3', time_visitante_id: 'T-B2', gols_casa: 0, gols_visitante: 0, half_atual: 0, status: 'agendada',     votacao_mvp_aberta: false, mvp_id: null, penaltis_casa: null, penaltis_visitante: null, time_casa: TIMES['T-A3'], time_visitante: TIMES['T-B2'], mvp: null },
+]
+
+// Gols e assistências das partidas encerradas
+export const mockCampeonatoEventos = [
+  // P01: Feras 2-1 Cobras
+  { id: 'E01', partida_id: 'P01', campeonato_id: 'CAMP-1', jogador_id: 'u01', time_id: 'T-A1', tipo: 'gol',         minuto: 3, half: 1, profiles: PLAYERS_SHORT['u01'], campeonato_times: TIMES['T-A1'] },
+  { id: 'E02', partida_id: 'P01', campeonato_id: 'CAMP-1', jogador_id: 'u02', time_id: 'T-A1', tipo: 'gol',         minuto: 7, half: 2, profiles: PLAYERS_SHORT['u02'], campeonato_times: TIMES['T-A1'] },
+  { id: 'E03', partida_id: 'P01', campeonato_id: 'CAMP-1', jogador_id: 'u03', time_id: 'T-A1', tipo: 'assistencia', minuto: 7, half: 2, profiles: PLAYERS_SHORT['u03'], campeonato_times: TIMES['T-A1'] },
+  { id: 'E04', partida_id: 'P01', campeonato_id: 'CAMP-1', jogador_id: 'u13', time_id: 'T-B1', tipo: 'gol',         minuto: 9, half: 2, profiles: PLAYERS_SHORT['u13'], campeonato_times: TIMES['T-B1'] },
+  // P02: Raios 1-1 Leões
+  { id: 'E05', partida_id: 'P02', campeonato_id: 'CAMP-1', jogador_id: 'u05', time_id: 'T-A2', tipo: 'gol',         minuto: 4, half: 1, profiles: PLAYERS_SHORT['u05'], campeonato_times: TIMES['T-A2'] },
+  { id: 'E06', partida_id: 'P02', campeonato_id: 'CAMP-1', jogador_id: 'u06', time_id: 'T-A2', tipo: 'assistencia', minuto: 4, half: 1, profiles: PLAYERS_SHORT['u06'], campeonato_times: TIMES['T-A2'] },
+  { id: 'E07', partida_id: 'P02', campeonato_id: 'CAMP-1', jogador_id: 'u17', time_id: 'T-B2', tipo: 'gol',         minuto: 8, half: 2, profiles: PLAYERS_SHORT['u17'], campeonato_times: TIMES['T-B2'] },
+  // P03: Trovões 0-2 Águias
+  { id: 'E08', partida_id: 'P03', campeonato_id: 'CAMP-1', jogador_id: 'u21', time_id: 'T-B3', tipo: 'gol',         minuto: 2, half: 1, profiles: PLAYERS_SHORT['u21'], campeonato_times: TIMES['T-B3'] },
+  { id: 'E09', partida_id: 'P03', campeonato_id: 'CAMP-1', jogador_id: 'u22', time_id: 'T-B3', tipo: 'gol',         minuto: 6, half: 2, profiles: PLAYERS_SHORT['u22'], campeonato_times: TIMES['T-B3'] },
+  { id: 'E10', partida_id: 'P03', campeonato_id: 'CAMP-1', jogador_id: 'u21', time_id: 'T-B3', tipo: 'assistencia', minuto: 6, half: 2, profiles: PLAYERS_SHORT['u21'], campeonato_times: TIMES['T-B3'] },
+  // P04: Feras 3-0 Leões
+  { id: 'E11', partida_id: 'P04', campeonato_id: 'CAMP-1', jogador_id: 'u01', time_id: 'T-A1', tipo: 'gol',         minuto: 1, half: 1, profiles: PLAYERS_SHORT['u01'], campeonato_times: TIMES['T-A1'] },
+  { id: 'E12', partida_id: 'P04', campeonato_id: 'CAMP-1', jogador_id: 'u01', time_id: 'T-A1', tipo: 'gol',         minuto: 4, half: 1, profiles: PLAYERS_SHORT['u01'], campeonato_times: TIMES['T-A1'] },
+  { id: 'E13', partida_id: 'P04', campeonato_id: 'CAMP-1', jogador_id: 'u04', time_id: 'T-A1', tipo: 'gol',         minuto: 9, half: 2, profiles: PLAYERS_SHORT['u04'], campeonato_times: TIMES['T-A1'] },
+  { id: 'E14', partida_id: 'P04', campeonato_id: 'CAMP-1', jogador_id: 'u02', time_id: 'T-A1', tipo: 'assistencia', minuto: 9, half: 2, profiles: PLAYERS_SHORT['u02'], campeonato_times: TIMES['T-A1'] },
+  // P05: Raios 2-1 Águias (votação aberta)
+  { id: 'E15', partida_id: 'P05', campeonato_id: 'CAMP-1', jogador_id: 'u05', time_id: 'T-A2', tipo: 'gol',         minuto: 3, half: 1, profiles: PLAYERS_SHORT['u05'], campeonato_times: TIMES['T-A2'] },
+  { id: 'E16', partida_id: 'P05', campeonato_id: 'CAMP-1', jogador_id: 'u07', time_id: 'T-A2', tipo: 'assistencia', minuto: 3, half: 1, profiles: PLAYERS_SHORT['u07'], campeonato_times: TIMES['T-A2'] },
+  { id: 'E17', partida_id: 'P05', campeonato_id: 'CAMP-1', jogador_id: 'u06', time_id: 'T-A2', tipo: 'gol',         minuto: 8, half: 2, profiles: PLAYERS_SHORT['u06'], campeonato_times: TIMES['T-A2'] },
+  { id: 'E18', partida_id: 'P05', campeonato_id: 'CAMP-1', jogador_id: 'u21', time_id: 'T-B3', tipo: 'gol',         minuto: 5, half: 2, profiles: PLAYERS_SHORT['u21'], campeonato_times: TIMES['T-B3'] },
+  // P06: Trovões 1-2 Cobras
+  { id: 'E19', partida_id: 'P06', campeonato_id: 'CAMP-1', jogador_id: 'u09', time_id: 'T-A3', tipo: 'gol',         minuto: 3, half: 1, profiles: PLAYERS_SHORT['u09'], campeonato_times: TIMES['T-A3'] },
+  { id: 'E20', partida_id: 'P06', campeonato_id: 'CAMP-1', jogador_id: 'u13', time_id: 'T-B1', tipo: 'gol',         minuto: 6, half: 2, profiles: PLAYERS_SHORT['u13'], campeonato_times: TIMES['T-B1'] },
+  { id: 'E21', partida_id: 'P06', campeonato_id: 'CAMP-1', jogador_id: 'u14', time_id: 'T-B1', tipo: 'assistencia', minuto: 6, half: 2, profiles: PLAYERS_SHORT['u14'], campeonato_times: TIMES['T-B1'] },
+  { id: 'E22', partida_id: 'P06', campeonato_id: 'CAMP-1', jogador_id: 'u14', time_id: 'T-B1', tipo: 'gol',         minuto: 9, half: 2, profiles: PLAYERS_SHORT['u14'], campeonato_times: TIMES['T-B1'] },
+  // P07: Feras 1-1 Águias (ao vivo)
+  { id: 'E23', partida_id: 'P07', campeonato_id: 'CAMP-1', jogador_id: 'u01', time_id: 'T-A1', tipo: 'gol',           minuto: 2, half: 1, profiles: PLAYERS_SHORT['u01'], campeonato_times: TIMES['T-A1'] },
+  { id: 'E24', partida_id: 'P07', campeonato_id: 'CAMP-1', jogador_id: 'u21', time_id: 'T-B3', tipo: 'gol',           minuto: 4, half: 1, profiles: PLAYERS_SHORT['u21'], campeonato_times: TIMES['T-B3'] },
+  { id: 'E25', partida_id: 'P07', campeonato_id: 'CAMP-1', jogador_id: 'u03', time_id: 'T-A1', tipo: 'cartao_amarelo', minuto: 3, half: 1, profiles: PLAYERS_SHORT['u03'], campeonato_times: TIMES['T-A1'] },
+]
+
+// Jogadores extraídos com time_id (shape do context)
+export const mockCampeonatoJogadores = [
+  ...mockCampeonatoTimes.flatMap(t =>
+    t.campeonato_time_jogadores.map(tj => ({ ...tj.profiles, time_id: t.id }))
+  )
+]

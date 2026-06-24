@@ -30,9 +30,9 @@ export default function Usuarios() {
     setLoading(false)
   }
 
-  async function approve(id) {
-    await supabase.from('profiles').update({ status: 'aprovado' }).eq('id', id)
-    setProfiles(p => p.map(u => u.id === id ? { ...u, status: 'aprovado' } : u))
+  async function approve(id, papel = 'usuario') {
+    await supabase.from('profiles').update({ status: 'aprovado', papel }).eq('id', id)
+    setProfiles(p => p.map(u => u.id === id ? { ...u, status: 'aprovado', papel } : u))
   }
 
   async function reject(id) {
@@ -134,7 +134,7 @@ export default function Usuarios() {
             key={u.id}
             user={u}
             tab={tab}
-            onApprove={() => approve(u.id)}
+            onApprove={(papel) => approve(u.id, papel)}
             onReject={() => reject(u.id)}
             onToggleAdmin={() => toggleAdmin(u.id, u.papel)}
             onDelete={() => deleteUser(u.id)}
@@ -153,6 +153,8 @@ export default function Usuarios() {
 }
 
 function UserCard({ user, tab, onApprove, onReject, onToggleAdmin, onDelete }) {
+  const [papelSelecionado, setPapelSelecionado] = useState('usuario')
+
   return (
     <div className="bg-card rounded-2xl p-4">
       <div className="flex items-center gap-3">
@@ -170,6 +172,9 @@ function UserCard({ user, tab, onApprove, onReject, onToggleAdmin, onDelete }) {
             {user.papel === 'admin' && (
               <Crown size={12} className="text-secondary shrink-0" />
             )}
+            {user.papel === 'telespectador' && (
+              <span className="text-[10px] font-bold text-text-muted bg-elevated px-1.5 py-0.5 rounded-full">👁 Telespectador</span>
+            )}
           </div>
           <p className="text-text-muted text-xs truncate">{user.email ?? '—'}</p>
         </div>
@@ -178,12 +183,30 @@ function UserCard({ user, tab, onApprove, onReject, onToggleAdmin, onDelete }) {
         <StatusBadge status={user.status} />
       </div>
 
+      {/* Seletor de papel para pendentes */}
+      {tab === 'pendentes' && (
+        <div className="flex gap-1.5 mt-3 p-1 bg-background rounded-xl">
+          <button
+            onClick={() => setPapelSelecionado('usuario')}
+            className={cn('flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors', papelSelecionado === 'usuario' ? 'bg-primary text-black' : 'text-text-muted')}
+          >
+            Jogador
+          </button>
+          <button
+            onClick={() => setPapelSelecionado('telespectador')}
+            className={cn('flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors', papelSelecionado === 'telespectador' ? 'bg-primary text-black' : 'text-text-muted')}
+          >
+            Telespectador
+          </button>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex gap-2 mt-3">
         {tab === 'pendentes' && (
           <>
-            <ActionBtn onClick={onApprove} color="green" icon={<Check size={14} />} label="Aprovar" />
-            <ActionBtn onClick={onReject}  color="red"   icon={<X size={14} />}     label="Rejeitar" />
+            <ActionBtn onClick={() => onApprove(papelSelecionado)} color="green" icon={<Check size={14} />} label="Aprovar" />
+            <ActionBtn onClick={onReject} color="red" icon={<X size={14} />} label="Rejeitar" />
           </>
         )}
 
@@ -201,8 +224,8 @@ function UserCard({ user, tab, onApprove, onReject, onToggleAdmin, onDelete }) {
 
         {tab === 'rejeitados' && (
           <>
-            <ActionBtn onClick={onApprove} color="green" icon={<Check size={14} />} label="Aprovar" />
-            <ActionBtn onClick={onDelete}  color="red"   icon={<Trash2 size={14} />} label="Excluir" />
+            <ActionBtn onClick={() => onApprove('usuario')} color="green" icon={<Check size={14} />} label="Aprovar" />
+            <ActionBtn onClick={onDelete} color="red" icon={<Trash2 size={14} />} label="Excluir" />
           </>
         )}
       </div>

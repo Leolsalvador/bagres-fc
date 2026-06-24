@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, Star, Target, Handshake, Shirt, Pencil, Check, X, Camera, ShieldCheck } from 'lucide-react'
+import { LogOut, Star, Target, Handshake, Shirt, Pencil, Check, X, Camera, ShieldCheck, Trophy } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { updateProfile, uploadAvatar } from '@/lib/api'
 
@@ -191,13 +191,20 @@ export default function Perfil() {
 
       {/* Painel Admin */}
       {isAdmin && (
-        <div className="mx-4 mb-3">
+        <div className="mx-4 mb-3 space-y-2">
           <button
             onClick={() => navigate('/admin/usuarios')}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-secondary/30 text-secondary text-sm font-semibold active:scale-95 transition-transform"
           >
             <ShieldCheck size={16} />
             Painel Admin
+          </button>
+          <button
+            onClick={() => navigate('/admin/campeonato')}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-secondary/30 text-secondary text-sm font-semibold active:scale-95 transition-transform"
+          >
+            <Trophy size={16} />
+            Gestão do Campeonato
           </button>
         </div>
       )}

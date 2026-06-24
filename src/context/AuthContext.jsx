@@ -117,8 +117,12 @@ export function AuthProvider({ children }) {
     if (user) await fetchProfile(user.id)
   }
 
+  const isAdmin        = profile?.papel === 'admin'
+  const isTelespectador = profile?.papel === 'telespectador'
+  const isJogador      = profile?.papel === 'usuario'
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signInWithGoogle, signUp, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, signIn, signInWithGoogle, signUp, signOut, refreshProfile, isAdmin, isTelespectador, isJogador }}>
       {children}
     </AuthContext.Provider>
   )
