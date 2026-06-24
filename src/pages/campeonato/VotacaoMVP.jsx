@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Star, User, Check, Trophy, Play, Pause, ArrowLeft } from 'lucide-react'
+import { Star, User, Check, Trophy, Play, ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -362,55 +362,14 @@ export default function VotacaoMVP() {
 
 // ── Live match view (read-only for non-admin) ─────────────────
 function LiveMatchView({ partida, timeCasa, timeVisitante, jogadoresCasa, jogadoresVisitante, eventosPartida }) {
-  const [liveSeconds, setLiveSeconds] = useState(null)
-  const [liveEndTs, setLiveEndTs] = useState(partida.timer_end_ts)
-  const [livePausedSecs, setLivePausedSecs] = useState(partida.timer_paused_secs)
-  const intervalRef = useRef(null)
-
-  // Fetch fresh data on mount so we don't rely on potentially stale context
-  useEffect(() => {
-    if (USE_MOCK || !partida.id) return
-    supabase.from('campeonato_partidas')
-      .select('timer_end_ts, timer_paused_secs')
-      .eq('id', partida.id)
-      .single()
-      .then(({ data }) => {
-        if (!data) return
-        setLiveEndTs(data.timer_end_ts)
-        setLivePausedSecs(data.timer_paused_secs)
-      })
-  }, [partida.id]) // eslint-disable-line
-
-  // Keep live state in sync when context updates via realtime
-  useEffect(() => { setLiveEndTs(partida.timer_end_ts) }, [partida.timer_end_ts])
-  useEffect(() => { setLivePausedSecs(partida.timer_paused_secs) }, [partida.timer_paused_secs])
-
-  // Sync timer from DB values
-  useEffect(() => {
-    clearInterval(intervalRef.current)
-
-    if (liveEndTs) {
-      const endTs = new Date(liveEndTs).getTime()
-      const initial = Math.max(0, Math.round((endTs - Date.now()) / 1000))
-      setLiveSeconds(initial)
-      if (initial > 0) {
-        intervalRef.current = setInterval(() => {
-          const r = Math.max(0, Math.round((endTs - Date.now()) / 1000))
-          setLiveSeconds(r)
-          if (r <= 0) clearInterval(intervalRef.current)
-        }, 60000)
-      }
-    } else if (livePausedSecs != null) {
-      setLiveSeconds(livePausedSecs)
-    } else {
-      setLiveSeconds(null)
-    }
-
-    return () => clearInterval(intervalRef.current)
-  }, [liveEndTs, livePausedSecs])
-
-  const isTimerRunning = !!liveEndTs && liveSeconds > 0
   const half = partida.half_atual
+
+  function faseLabel(h) {
+    if (h === 'i') return 'Intervalo'
+    if (h === 1) return '1° Tempo'
+    if (h === 2) return '2° Tempo'
+    return null
+  }
 
   const golEvents = eventosPartida.filter(e => e.tipo === 'gol')
   const recentEvents = [...eventosPartida]
@@ -419,16 +378,11 @@ function LiveMatchView({ partida, timeCasa, timeVisitante, jogadoresCasa, jogado
 
   return (
     <div className="min-h-full bg-background flex flex-col">
-      {/* AO VIVO badge */}
+      {/* AO VIVO badge + fase */}
       <div className="px-4 pt-8 pb-2">
         <div className="flex items-center gap-2 mb-3">
           <span className="w-2 h-2 rounded-full bg-danger animate-pulse" />
           <span className="text-[10px] font-black text-danger uppercase tracking-widest">Ao Vivo</span>
-          {half > 0 && (
-            <span className="text-[10px] font-semibold text-text-muted uppercase ml-1">
-              — {half === 1 ? '1° Tempo' : '2° Tempo'}
-            </span>
-          )}
         </div>
 
         {/* Score */}
@@ -446,16 +400,11 @@ function LiveMatchView({ partida, timeCasa, timeVisitante, jogadoresCasa, jogado
           </p>
         </div>
 
-        {/* Timer display (read-only) — shows minutes only, updates every 60s */}
-        {liveSeconds !== null && (
-          <div className="flex items-center justify-center gap-2 mt-2">
-            {isTimerRunning
-              ? <Play size={12} className="text-primary" />
-              : <Pause size={12} className="text-text-muted" />}
-            <span className={cn('font-black text-2xl tabular-nums tracking-tight', isTimerRunning ? 'text-text-main' : 'text-text-muted')}>
-              {isTimerRunning
-                ? `${Math.ceil(liveSeconds / 60)} min`
-                : formatTime(liveSeconds)}
+        {/* Fase atual */}
+        {faseLabel(half) && (
+          <div className="flex items-center justify-center mt-2">
+            <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wide">
+              {faseLabel(half)}
             </span>
           </div>
         )}
