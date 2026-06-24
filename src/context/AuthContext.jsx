@@ -21,17 +21,29 @@ export function AuthProvider({ children }) {
       return data
     }
 
-    // Perfil não existe — primeiro login via Google OAuth
-    // Cria como pendente para o admin aprovar
+    // Primeiro login via Google OAuth — só cria perfil se não existir
+    // Usa upsert com ignoreDuplicates para evitar sobrescrever perfil existente bloqueado por RLS
     const { data: { user: u } } = await supabase.auth.getUser()
     const nome = u?.user_metadata?.full_name || u?.user_metadata?.name || u?.email || 'Novo Jogador'
     const { data: newProfile } = await supabase
       .from('profiles')
-      .insert({ id: userId, nome, email: u?.email, status: 'pendente', papel: 'usuario' })
+      .upsert(
+        { id: userId, nome, email: u?.email, status: 'pendente', papel: 'usuario' },
+        { onConflict: 'id', ignoreDuplicates: true }
+      )
       .select()
       .maybeSingle()
-    setProfile(newProfile)
-    return newProfile
+
+    if (newProfile) {
+      setProfile(newProfile)
+      return newProfile
+    }
+
+    // Perfil já existe mas RLS bloqueia leitura (usuário pendente sem policy correta)
+    // Retorna perfil mínimo para o app não ficar preso
+    const fallback = { id: userId, status: 'pendente', papel: 'usuario', nome }
+    setProfile(fallback)
+    return fallback
   }
 
   useEffect(() => {
