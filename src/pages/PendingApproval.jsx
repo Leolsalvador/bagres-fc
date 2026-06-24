@@ -1,11 +1,13 @@
 import { Clock, LogOut } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { supabase } from '@/lib/supabase'
 
 export default function PendingApproval() {
-  const { signOut, profile, user, refreshProfile } = useAuth()
+  const { signOut, profile, user } = useAuth()
   const navigate = useNavigate()
+  const userIdRef = useRef(user?.id)
 
   useEffect(() => {
     if (!user) navigate('/login', { replace: true })
@@ -15,12 +17,16 @@ export default function PendingApproval() {
     if (profile?.status === 'aprovado') navigate('/home', { replace: true })
   }, [profile, navigate])
 
-  // Polling como fallback caso o Realtime não esteja ativo para a tabela profiles
+  // Polling a cada 5s — fallback para quando o Realtime não estiver ativo em profiles
   useEffect(() => {
-    if (!user) return
-    const interval = setInterval(() => refreshProfile(), 5000)
+    const uid = userIdRef.current
+    if (!uid) return
+    const interval = setInterval(async () => {
+      const { data } = await supabase.from('profiles').select('status').eq('id', uid).single()
+      if (data?.status === 'aprovado') navigate('/home', { replace: true })
+    }, 5000)
     return () => clearInterval(interval)
-  }, [user, refreshProfile])
+  }, [navigate])
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
