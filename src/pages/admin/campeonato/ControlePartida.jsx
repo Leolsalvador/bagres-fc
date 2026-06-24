@@ -32,6 +32,7 @@ function playBeep() {
 export default function ControlePartida() {
   const { campeonato, partidas, times, jogadores, eventos, loading, refresh, updatePartidaLocal } = useCampeonato()
   const location = useLocation()
+  const navigate = useNavigate()
   const [partidaSelecionada, setPartidaSelecionada] = useState(null)
   const [forceList, setForceList] = useState(false)
 
