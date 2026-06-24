@@ -205,27 +205,59 @@ function PartidaControle({ partida: initialPartida, jogadores, times, eventosIni
   const jogadoresVisitante = jogadores.filter(j => j.time_id === partida.time_visitante_id)
   const encerrada = partida.status === 'encerrada'
 
-  // Initialize timer from DB state on mount
+  // Initialize timer — always reads fresh state from DB so stale context props don't reset it
   useEffect(() => {
-    const p = initialPartida
-    if (p.timer_end_ts) {
-      const endTs = new Date(p.timer_end_ts).getTime()
-      const remaining = Math.round((endTs - Date.now()) / 1000)
-      if (remaining > 0) {
-        endTimeRef.current = endTs
-        setSeconds(remaining)
-        setIsRunning(true)
-      } else {
+    if (USE_MOCK) {
+      const p = initialPartida
+      if (p.timer_end_ts) {
+        const endTs = new Date(p.timer_end_ts).getTime()
+        const remaining = Math.round((endTs - Date.now()) / 1000)
+        if (remaining > 0) { endTimeRef.current = endTs; setSeconds(remaining); setIsRunning(true) }
+        else { setSeconds(0); setTimeExpired(true) }
+      } else if (p.timer_paused_secs != null) {
+        setSeconds(p.timer_paused_secs)
+      }
+      return
+    }
+    supabase.from('campeonato_partidas')
+      .select('timer_end_ts, timer_paused_secs, half_atual')
+      .eq('id', initialPartida.id)
+      .single()
+      .then(({ data }) => {
+        if (!data) return
+        if (data.half_atual) setFase(data.half_atual)
+        if (data.timer_end_ts) {
+          const endTs = new Date(data.timer_end_ts).getTime()
+          const remaining = Math.round((endTs - Date.now()) / 1000)
+          if (remaining > 0) { endTimeRef.current = endTs; setSeconds(remaining); setIsRunning(true) }
+          else { setSeconds(0); setTimeExpired(true) }
+        } else if (data.timer_paused_secs != null) {
+          setSeconds(data.timer_paused_secs)
+        } else {
+          const f = data.half_atual || 1
+          setSeconds(DURACAO[f] ?? DURACAO[1])
+        }
+      })
+  }, []) // eslint-disable-line
+
+  // Recalculate timer from endTimeRef when tab comes back to foreground (handles alt+tab, background throttle)
+  useEffect(() => {
+    function onVisibility() {
+      if (document.visibilityState !== 'visible') return
+      if (!endTimeRef.current) return
+      const remaining = Math.max(0, Math.round((endTimeRef.current - Date.now()) / 1000))
+      if (remaining <= 0) {
+        clearInterval(intervalRef.current)
+        setIsRunning(false)
         setSeconds(0)
         setTimeExpired(true)
+      } else {
+        setSeconds(remaining)
       }
-    } else if (p.timer_paused_secs != null) {
-      setSeconds(p.timer_paused_secs)
-    } else {
-      const f = p.half_atual || 1
-      setSeconds(DURACAO[f] ?? DURACAO[1])
     }
-  }, []) // eslint-disable-line
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [])
 
   // Timer countdown
   useEffect(() => {
