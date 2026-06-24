@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { USE_MOCK, mockCurrentUser } from '@/lib/mockData'
 
@@ -113,9 +113,9 @@ export function AuthProvider({ children }) {
     setProfile(null)
   }
 
-  async function refreshProfile() {
+  const refreshProfile = useCallback(async () => {
     if (user) await fetchProfile(user.id)
-  }
+  }, [user])
 
   const isAdmin        = profile?.papel === 'admin'
   const isTelespectador = profile?.papel === 'telespectador'
