@@ -75,41 +75,106 @@ export default function ControlePartida() {
 
   return (
     <div className="min-h-full bg-background">
-      <div className="px-4 pt-10 pb-3">
-        <h1 className="text-2xl font-black text-text-main uppercase tracking-widest">Controle</h1>
-        <p className="text-text-muted text-sm">{campeonato.nome}</p>
+      <div className="px-4 pt-10 pb-3 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-black text-text-main uppercase tracking-widest">Controle</h1>
+          <p className="text-text-muted text-sm">{campeonato.nome}</p>
+        </div>
+        <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-text-muted text-sm">
+          <ArrowLeft size={16} /> Sair
+        </button>
       </div>
       <div className="px-4 space-y-3 pb-8">
-        <p className="text-xs font-bold text-text-muted uppercase tracking-wider">Próximas partidas</p>
-        {proximas.length === 0 && (
+        {aoVivo && <PartidaAoVivoCard partida={aoVivo} times={times} onPress={() => { setPartidaSelecionada(aoVivo); setForceList(false) }} />}
+        {proximas.length > 0 && (
+          <>
+            <p className="text-xs font-bold text-text-muted uppercase tracking-wider mt-2">Próximas partidas</p>
+            {proximas.map(p => {
+              const tc = times.find(t => t.id === p.time_casa_id) ?? p.time_casa
+              const tv = times.find(t => t.id === p.time_visitante_id) ?? p.time_visitante
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => { setPartidaSelecionada(p); setForceList(false) }}
+                  className="w-full bg-card rounded-2xl p-4 flex items-center gap-3 active:bg-elevated transition-colors"
+                >
+                  <div className="flex-1 flex items-center justify-between gap-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: tc?.cor }} />
+                      <span className="font-semibold text-text-main">{tc?.nome}</span>
+                    </div>
+                    <span className="text-text-muted text-xs">vs</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-text-main">{tv?.nome}</span>
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: tv?.cor }} />
+                    </div>
+                  </div>
+                  <Play size={16} className="text-primary shrink-0" />
+                </button>
+              )
+            })}
+          </>
+        )}
+        {!aoVivo && proximas.length === 0 && (
           <p className="text-text-muted text-sm text-center py-8">Todas as partidas foram realizadas.</p>
         )}
-        {proximas.map(p => {
-          const tc = times.find(t => t.id === p.time_casa_id) ?? p.time_casa
-          const tv = times.find(t => t.id === p.time_visitante_id) ?? p.time_visitante
-          return (
-            <button
-              key={p.id}
-              onClick={() => { setPartidaSelecionada(p); setForceList(false) }}
-              className="w-full bg-card rounded-2xl p-4 flex items-center gap-3 active:bg-elevated transition-colors"
-            >
-              <div className="flex-1 flex items-center justify-between gap-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: tc?.cor }} />
-                  <span className="font-semibold text-text-main">{tc?.nome}</span>
-                </div>
-                <span className="text-text-muted text-xs">vs</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-text-main">{tv?.nome}</span>
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: tv?.cor }} />
-                </div>
-              </div>
-              <Play size={16} className="text-primary shrink-0" />
-            </button>
-          )
-        })}
       </div>
     </div>
+  )
+}
+
+function PartidaAoVivoCard({ partida: p, times, onPress }) {
+  const tc = times.find(t => t.id === p.time_casa_id) ?? p.time_casa
+  const tv = times.find(t => t.id === p.time_visitante_id) ?? p.time_visitante
+  const [liveSeconds, setLiveSeconds] = useState(null)
+
+  useEffect(() => {
+    if (p.timer_end_ts) {
+      const endTs = new Date(p.timer_end_ts).getTime()
+      setLiveSeconds(Math.max(0, Math.round((endTs - Date.now()) / 1000)))
+      const iv = setInterval(() => {
+        const r = Math.max(0, Math.round((endTs - Date.now()) / 1000))
+        setLiveSeconds(r)
+        if (r <= 0) clearInterval(iv)
+      }, 500)
+      return () => clearInterval(iv)
+    } else if (p.timer_paused_secs != null) {
+      setLiveSeconds(p.timer_paused_secs)
+    }
+  }, [p.timer_end_ts, p.timer_paused_secs])
+
+  return (
+    <button
+      onClick={onPress}
+      className="w-full bg-primary/10 border border-primary/30 rounded-2xl p-4 flex items-center gap-3 active:bg-primary/20 transition-colors"
+    >
+      <div className="flex-1">
+        <div className="flex items-center gap-1.5 mb-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />
+          <span className="text-[10px] font-black text-danger uppercase tracking-widest">Ao Vivo</span>
+        </div>
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: tc?.cor }} />
+            <span className="font-semibold text-text-main">{tc?.nome}</span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="font-black text-text-main">{p.gols_casa}</span>
+            <span className="text-text-muted text-xs">×</span>
+            <span className="font-black text-text-main">{p.gols_visitante}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-text-main">{tv?.nome}</span>
+            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: tv?.cor }} />
+          </div>
+        </div>
+      </div>
+      {liveSeconds !== null && (
+        <span className={cn('font-black text-lg tabular-nums shrink-0', p.timer_end_ts ? 'text-primary' : 'text-text-muted')}>
+          {formatTime(liveSeconds)}
+        </span>
+      )}
+    </button>
   )
 }
 
@@ -310,7 +375,7 @@ function PartidaControle({ partida: initialPartida, jogadores, times, eventosIni
     <div className="min-h-full bg-background flex flex-col">
       {/* Header */}
       <div className="px-4 pt-6 pb-3">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-text-muted text-sm mb-3">
+        <button onClick={onBack} className="flex items-center gap-1 text-text-muted text-sm mb-3">
           <ArrowLeft size={16} /> Voltar
         </button>
 
