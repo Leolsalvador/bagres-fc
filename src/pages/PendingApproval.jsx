@@ -2,10 +2,12 @@ import { Clock, LogOut, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { useCampeonato } from '@/context/CampeonatoContext'
 import { supabase } from '@/lib/supabase'
 
 export default function PendingApproval() {
   const { signOut, profile, user, refreshProfile } = useAuth()
+  const { refresh: refreshCampeonato } = useCampeonato()
   const navigate = useNavigate()
   const [checking, setChecking] = useState(false)
   const [dbStatus, setDbStatus] = useState(null)
@@ -31,6 +33,7 @@ export default function PendingApproval() {
     setDbStatus(data?.status ?? 'erro ao buscar')
     if (data?.status === 'aprovado') {
       await refreshProfile()
+      await refreshCampeonato()
       navigate('/home', { replace: true })
     }
   }
