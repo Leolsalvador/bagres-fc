@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 
 export default function PendingApproval() {
-  const { signOut, profile, user } = useAuth()
+  const { signOut, profile, user, refreshProfile } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -14,6 +14,13 @@ export default function PendingApproval() {
   useEffect(() => {
     if (profile?.status === 'aprovado') navigate('/home', { replace: true })
   }, [profile, navigate])
+
+  // Polling como fallback caso o Realtime não esteja ativo para a tabela profiles
+  useEffect(() => {
+    if (!user) return
+    const interval = setInterval(() => refreshProfile(), 5000)
+    return () => clearInterval(interval)
+  }, [user, refreshProfile])
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
