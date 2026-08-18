@@ -1,36 +1,56 @@
 /**
  * Gera a tabela de jogos para o formato cruzado (Grupo A vs Grupo B).
  * Cada time do Grupo A enfrenta cada time do Grupo B.
- * Garante que o mesmo time não jogue em partidas consecutivas.
+ *
+ * Monta por rodadas: em cada rodada, cada time do grupo menor enfrenta um
+ * time distinto do grupo maior (rotação circular), então nenhum time repete
+ * dentro da rodada. Isso evita cair num "resto" só de um time no final —
+ * o bug do algoritmo guloso anterior, que empacava e forçava o último time
+ * a jogar várias partidas seguidas.
  */
 export function generateCrossGroupSchedule(groupA, groupB) {
-  // Gera todos os confrontos A × B
-  const allMatches = []
-  groupA.forEach(ta => {
-    groupB.forEach(tb => {
-      allMatches.push({ timeCasaId: ta.id, timeVisitanteId: tb.id })
-    })
-  })
+  const aIsBigger = groupA.length >= groupB.length
+  const bigger  = aIsBigger ? groupA : groupB
+  const smaller = aIsBigger ? groupB : groupA
+  const m = smaller.length
+  const n = bigger.length
+  if (m === 0 || n === 0) return []
 
-  // Ordena para minimizar aparições consecutivas do mesmo time
-  const sorted = [allMatches[0]]
-  const remaining = [...allMatches.slice(1)]
-
-  while (remaining.length > 0) {
-    const last = sorted[sorted.length - 1]
-    const usedTeams = new Set([last.timeCasaId, last.timeVisitanteId])
-
-    const idx = remaining.findIndex(
-      m => !usedTeams.has(m.timeCasaId) && !usedTeams.has(m.timeVisitanteId)
-    )
-
-    sorted.push(idx >= 0 ? remaining.splice(idx, 1)[0] : remaining.shift())
+  const rounds = []
+  for (let t = 0; t < n; t++) {
+    const round = []
+    for (let i = 0; i < m; i++) {
+      const s = smaller[i]
+      const b = bigger[(i + t) % n]
+      round.push(aIsBigger
+        ? { timeCasaId: b.id, timeVisitanteId: s.id }
+        : { timeCasaId: s.id, timeVisitanteId: b.id })
+    }
+    rounds.push(round)
   }
 
-  return sorted.map((m, i) => ({
-    ...m,
+  // Dentro de cada rodada nenhum time repete, então a ordem interna é livre —
+  // usamos essa liberdade só para garantir que a última partida de uma rodada
+  // e a primeira da próxima não compartilhem time.
+  const ordered = []
+  let last = null
+  rounds.forEach(round => {
+    const r = [...round]
+    if (last) {
+      const idx = r.findIndex(mm =>
+        mm.timeCasaId !== last.timeCasaId && mm.timeCasaId !== last.timeVisitanteId &&
+        mm.timeVisitanteId !== last.timeCasaId && mm.timeVisitanteId !== last.timeVisitanteId
+      )
+      if (idx > 0) { const [pick] = r.splice(idx, 1); r.unshift(pick) }
+    }
+    ordered.push(...r)
+    last = r[r.length - 1]
+  })
+
+  return ordered.map((match, i) => ({
+    ...match,
     ordem: i + 1,
-    rodadaNum: Math.floor(i / Math.max(groupA.length, groupB.length)) + 1,
+    rodadaNum: Math.floor(i / m) + 1,
     fase: 'grupos',
   }))
 }
