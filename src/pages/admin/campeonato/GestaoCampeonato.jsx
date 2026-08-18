@@ -127,6 +127,18 @@ export default function GestaoCampeonato() {
     setSaving(false)
   }
 
+  async function excluirCampeonato() {
+    if (!campeonato?.id) return
+    if (!window.confirm(`Excluir "${campeonato.nome}" permanentemente? Isso remove times, partidas, eventos e votos. Não pode ser desfeito.`)) return
+    setSaving(true)
+    const { error } = await supabase.from('campeonatos').delete().eq('id', campeonato.id)
+    if (error) { alert('Erro ao excluir: ' + error.message); setSaving(false); return }
+    setAdminCamp(null)
+    setAdminTimes([])
+    refresh()
+    setSaving(false)
+  }
+
   async function gerarPartidasMataEmMata() {
     const grupoA = adminTimes.filter(t => t.grupo === 'A')
     const grupoB = adminTimes.filter(t => t.grupo === 'B')
@@ -261,6 +273,9 @@ export default function GestaoCampeonato() {
                 Resetar para Rascunho
               </button>
             )}
+            <button onClick={excluirCampeonato} disabled={saving} className="col-span-2 flex items-center justify-center gap-2 py-3 rounded-xl bg-danger/20 text-danger text-sm font-bold active:scale-95 transition-transform disabled:opacity-50 border border-danger/30">
+              <Trash2 size={15} /> Excluir campeonato
+            </button>
           </div>
 
           {/* Times */}
