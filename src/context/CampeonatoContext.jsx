@@ -53,12 +53,12 @@ export function CampeonatoProvider({ children }) {
           .order('grupo'),
         supabase
           .from('campeonato_partidas')
-          .select('*, time_casa:campeonato_times!time_casa_id(id, nome, cor), time_visitante:campeonato_times!time_visitante_id(id, nome, cor), mvp:profiles!mvp_id(id, nome, foto_url)')
+          .select('*, time_casa:campeonato_times!time_casa_id(id, nome, cor, cor_secundaria), time_visitante:campeonato_times!time_visitante_id(id, nome, cor, cor_secundaria), mvp:profiles!mvp_id(id, nome, foto_url)')
           .eq('campeonato_id', camp.id)
           .order('ordem'),
         supabase
           .from('campeonato_eventos')
-          .select('*, profiles(id, nome, foto_url), campeonato_times(id, nome, cor)')
+          .select('*, profiles(id, nome, foto_url), campeonato_times(id, nome, cor, cor_secundaria)')
           .eq('campeonato_id', camp.id)
           .order('created_at'),
       ])

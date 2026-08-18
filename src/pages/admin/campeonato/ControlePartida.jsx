@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Play, Pause, RotateCcw, ArrowLeft, User } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, teamDotStyle } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useCampeonato } from '@/context/CampeonatoContext'
@@ -101,13 +101,13 @@ export default function ControlePartida() {
                 >
                   <div className="flex-1 flex items-center justify-between gap-2 text-sm">
                     <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: tc?.cor }} />
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={teamDotStyle(tc)} />
                       <span className="font-semibold text-text-main">{tc?.nome}</span>
                     </div>
                     <span className="text-text-muted text-xs">vs</span>
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-text-main">{tv?.nome}</span>
-                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: tv?.cor }} />
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={teamDotStyle(tv)} />
                     </div>
                   </div>
                   <Play size={16} className="text-primary shrink-0" />
@@ -156,7 +156,7 @@ function PartidaAoVivoCard({ partida: p, times, onPress }) {
         </div>
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: tc?.cor }} />
+            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={teamDotStyle(tc)} />
             <span className="font-semibold text-text-main">{tc?.nome}</span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
@@ -166,7 +166,7 @@ function PartidaAoVivoCard({ partida: p, times, onPress }) {
           </div>
           <div className="flex items-center gap-2">
             <span className="font-semibold text-text-main">{tv?.nome}</span>
-            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: tv?.cor }} />
+            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={teamDotStyle(tv)} />
           </div>
         </div>
       </div>
@@ -799,7 +799,7 @@ function TimeSection({ time, jogadores, onSelect }) {
   return (
     <div className="mb-3">
       <div className="flex items-center gap-2 mb-2">
-        <span className="w-2.5 h-2.5 rounded-full" style={{ background: time?.cor }} />
+        <span className="w-2.5 h-2.5 rounded-full" style={teamDotStyle(time)} />
         <span className="text-xs font-bold text-text-muted uppercase tracking-wider">{time?.nome}</span>
       </div>
       <div className="space-y-1">

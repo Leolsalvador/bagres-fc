@@ -1,12 +1,43 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Trash2, ChevronDown, Eye, EyeOff, Trophy, Play, Users, Shuffle } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Plus, Trash2, ChevronDown, Eye, EyeOff, Trophy, Play, Users, Shuffle, X } from 'lucide-react'
+import { cn, teamDotStyle } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { generateCrossGroupSchedule, calcularClassificacao } from '@/lib/roundRobin'
 import { useCampeonato } from '@/context/CampeonatoContext'
 
-const CORES = ['#EF4444','#3B82F6','#F59E0B','#8B5CF6','#EC4899','#10B981','#F97316','#06B6D4']
+const CORES = ['#EF4444','#3B82F6','#F59E0B','#8B5CF6','#EC4899','#10B981','#F97316','#06B6D4','#FFFFFF','#000000']
+
+// ── Linha de swatches de cor — usada na criação e edição de times ──
+function ColorSwatchRow({ value, onChange, allowClear = false }) {
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      {allowClear && (
+        <button
+          onClick={() => onChange(null)}
+          title="Sem cor secundária"
+          className={cn(
+            'w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0',
+            !value ? 'border-white' : 'border-border'
+          )}
+        >
+          <X size={11} className="text-text-muted" />
+        </button>
+      )}
+      {CORES.map(c => (
+        <button
+          key={c}
+          onClick={() => onChange(c)}
+          className={cn(
+            'w-6 h-6 rounded-full border-2 transition-transform shrink-0',
+            value === c ? 'border-white scale-110' : 'border-transparent'
+          )}
+          style={{ background: c }}
+        />
+      ))}
+    </div>
+  )
+}
 
 export default function GestaoCampeonato() {
   const { profile } = useAuth()
@@ -265,13 +296,14 @@ function GrupoEditor({ campeonatoId, grupo, times, onRefresh }) {
   const [showAddTime, setShowAddTime] = useState(false)
   const [nomeTime, setNomeTime] = useState('')
   const [cor, setCor] = useState(CORES[0])
+  const [corSecundaria, setCorSecundaria] = useState(null)
   const [saving, setSaving] = useState(false)
 
   async function addTime() {
     if (!nomeTime.trim()) return
     setSaving(true)
-    await supabase.from('campeonato_times').insert({ campeonato_id: campeonatoId, nome: nomeTime.trim(), cor, grupo })
-    setNomeTime(''); setShowAddTime(false); onRefresh()
+    await supabase.from('campeonato_times').insert({ campeonato_id: campeonatoId, nome: nomeTime.trim(), cor, cor_secundaria: corSecundaria, grupo })
+    setNomeTime(''); setCorSecundaria(null); setShowAddTime(false); onRefresh()
     setSaving(false)
   }
 
@@ -290,16 +322,19 @@ function GrupoEditor({ campeonatoId, grupo, times, onRefresh }) {
       </div>
 
       {showAddTime && (
-        <div className="px-4 py-3 border-b border-border space-y-2">
+        <div className="px-4 py-3 border-b border-border space-y-3">
           <input
             type="text" placeholder="Nome do time" value={nomeTime}
             onChange={e => setNomeTime(e.target.value)}
             className="w-full bg-input text-text-main placeholder-text-muted rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-primary text-sm"
           />
-          <div className="flex gap-2">
-            {CORES.map(c => (
-              <button key={c} onClick={() => setCor(c)} className={cn('w-6 h-6 rounded-full border-2 transition-transform', cor === c ? 'border-white scale-110' : 'border-transparent')} style={{ background: c }} />
-            ))}
+          <div>
+            <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">Cor principal</p>
+            <ColorSwatchRow value={cor} onChange={setCor} />
+          </div>
+          <div>
+            <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">Cor secundária (opcional)</p>
+            <ColorSwatchRow value={corSecundaria} onChange={setCorSecundaria} allowClear />
           </div>
           <div className="flex gap-2">
             <button onClick={() => setShowAddTime(false)} className="flex-1 py-2 rounded-xl text-xs font-semibold text-text-muted bg-elevated">Cancelar</button>
@@ -329,6 +364,7 @@ function TimeRow({ time, campeonatoId, onRemove, onRefresh }) {
   const [showAddPanel, setShowAddPanel] = useState(false)
   const [search, setSearch] = useState('')
   const [allAllocated, setAllAllocated] = useState(new Set())
+  const [showColorPicker, setShowColorPicker] = useState(false)
 
   async function load() {
     setLoading(true)
@@ -363,6 +399,11 @@ function TimeRow({ time, campeonatoId, onRemove, onRefresh }) {
     load(); onRefresh()
   }
 
+  async function updateCor(field, value) {
+    await supabase.from('campeonato_times').update({ [field]: value }).eq('id', time.id)
+    onRefresh()
+  }
+
   const inscritos = new Set(jogadoresTimes.map(j => j.jogador_id))
   const inscritosCount = jogadoresTimes.length
 
@@ -370,7 +411,11 @@ function TimeRow({ time, campeonatoId, onRemove, onRefresh }) {
     <div>
       {/* Cabeçalho do time — clicável */}
       <button onClick={toggle} className="w-full px-4 py-3 flex items-center gap-3 active:bg-white/5 transition-colors">
-        <span className="w-3 h-3 rounded-full shrink-0" style={{ background: time.cor }} />
+        <button
+          onClick={e => { e.stopPropagation(); setShowColorPicker(v => !v) }}
+          className="w-5 h-5 rounded-full shrink-0 ring-2 ring-offset-2 ring-offset-card ring-transparent active:ring-white/30 transition-all"
+          style={teamDotStyle(time)}
+        />
         <span className="text-sm font-semibold text-text-main flex-1 text-left">{time.nome}</span>
         <span className="text-xs text-text-muted flex items-center gap-1 shrink-0">
           <Users size={11} /> {inscritosCount}
@@ -383,6 +428,20 @@ function TimeRow({ time, campeonatoId, onRemove, onRefresh }) {
           <Trash2 size={13} />
         </button>
       </button>
+
+      {/* Seletor de cor */}
+      {showColorPicker && (
+        <div className="px-4 py-3 border-t border-border/50 bg-background/40 space-y-3">
+          <div>
+            <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">Cor principal</p>
+            <ColorSwatchRow value={time.cor} onChange={c => updateCor('cor', c)} />
+          </div>
+          <div>
+            <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">Cor secundária (opcional)</p>
+            <ColorSwatchRow value={time.cor_secundaria} onChange={c => updateCor('cor_secundaria', c)} allowClear />
+          </div>
+        </div>
+      )}
 
       {/* Lista de jogadores expansível */}
       {open && (

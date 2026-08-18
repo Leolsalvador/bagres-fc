@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Star, User, Check, Trophy, Play, ArrowLeft } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, teamDotStyle } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useCampeonato } from '@/context/CampeonatoContext'
@@ -181,14 +181,14 @@ export default function VotacaoMVP() {
         </div>
         <div className="flex items-center justify-center gap-3 mt-3">
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full" style={{ background: timeCasa?.cor }} />
+            <span className="w-2.5 h-2.5 rounded-full" style={teamDotStyle(timeCasa)} />
             <span className="text-sm font-bold text-text-main">{timeCasa?.nome}</span>
           </div>
           <span className="text-text-muted font-black">
             {partida.gols_casa} – {partida.gols_visitante}
           </span>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full" style={{ background: timeVisitante?.cor }} />
+            <span className="w-2.5 h-2.5 rounded-full" style={teamDotStyle(timeVisitante)} />
             <span className="text-sm font-bold text-text-main">{timeVisitante?.nome}</span>
           </div>
         </div>
@@ -289,7 +289,7 @@ export default function VotacaoMVP() {
         {[{ time: timeCasa, jogadores: jogadoresCasa }, { time: timeVisitante, jogadores: jogadoresVisitante }].map(({ time, jogadores: jgs }) => (
           <div key={time?.id} className="bg-card rounded-2xl overflow-hidden">
             <div className="px-4 py-2.5 border-b border-border flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full" style={{ background: time?.cor }} />
+              <span className="w-2.5 h-2.5 rounded-full" style={teamDotStyle(time)} />
               <span className="text-xs font-bold text-text-muted uppercase tracking-wider">{time?.nome}</span>
             </div>
             <div className="divide-y divide-border/50">
@@ -498,12 +498,12 @@ function MatchHeader({ partida, timeCasa, timeVisitante, subtitle }) {
       </div>
       <div className="flex items-center justify-center gap-3 mt-3">
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full" style={{ background: timeCasa?.cor }} />
+          <span className="w-2.5 h-2.5 rounded-full" style={teamDotStyle(timeCasa)} />
           <span className="text-sm font-bold text-text-main">{timeCasa?.nome}</span>
         </div>
         <span className="text-text-muted font-black">{partida.gols_casa} – {partida.gols_visitante}</span>
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full" style={{ background: timeVisitante?.cor }} />
+          <span className="w-2.5 h-2.5 rounded-full" style={teamDotStyle(timeVisitante)} />
           <span className="text-sm font-bold text-text-main">{timeVisitante?.nome}</span>
         </div>
       </div>

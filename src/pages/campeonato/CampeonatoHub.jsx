@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Trophy, Swords, Star, User } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, teamDotStyle } from '@/lib/utils'
 import { useCampeonato } from '@/context/CampeonatoContext'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -118,7 +118,7 @@ function TabelaGrupo({ label, times }) {
               </td>
               <td className="px-2 py-2.5">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: t.cor }} />
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={teamDotStyle(t)} />
                   <span className="font-semibold text-text-main truncate max-w-[100px]">{t.nome}</span>
                 </div>
               </td>
