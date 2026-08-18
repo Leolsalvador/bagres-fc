@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { calcularClassificacao } from '@/lib/roundRobin'
+import { eventPlayerKey, playerKey } from '@/lib/utils'
 import { USE_MOCK, mockCampeonato, mockCampeonatoTimes, mockCampeonatoPartidas, mockCampeonatoEventos, mockCampeonatoJogadores } from '@/lib/mockData'
 
 const CampeonatoContext = createContext(null)
@@ -48,7 +49,7 @@ export function CampeonatoProvider({ children }) {
       const [{ data: timesData }, { data: partidasData }, { data: eventosData }] = await Promise.all([
         supabase
           .from('campeonato_times')
-          .select('*, campeonato_time_jogadores(jogador_id, profiles(id, nome, foto_url))')
+          .select('*, campeonato_time_jogadores(id, jogador_id, is_guest, guest_nome, profiles(id, nome, foto_url))')
           .eq('campeonato_id', camp.id)
           .order('grupo'),
         supabase
@@ -68,14 +69,16 @@ export function CampeonatoProvider({ children }) {
       setPartidas(partidasData ?? [])
       setEventos(eventosData ?? [])
 
-      // Extrai todos os perfis únicos dos times
+      // Extrai todos os jogadores dos times — perfis com conta + convidados
       const profiles = []
       const seen = new Set()
       timesArr.forEach(t => {
         t.campeonato_time_jogadores?.forEach(tj => {
-          if (tj.profiles && !seen.has(tj.profiles.id)) {
+          if (tj.is_guest) {
+            profiles.push({ id: null, nome: tj.guest_nome, foto_url: null, time_id: t.id, is_guest: true, tj_id: tj.id })
+          } else if (tj.profiles && !seen.has(tj.profiles.id)) {
             seen.add(tj.profiles.id)
-            profiles.push({ ...tj.profiles, time_id: t.id })
+            profiles.push({ ...tj.profiles, time_id: t.id, is_guest: false, tj_id: tj.id })
           }
         })
       })
@@ -131,19 +134,19 @@ function calcularEstatisticas(eventos, jogadores) {
   const assists = {}
 
   eventos.forEach(e => {
-    const id = e.jogador_id
-    if (e.tipo === 'gol') gols[id] = (gols[id] ?? 0) + 1
-    if (e.tipo === 'assistencia') assists[id] = (assists[id] ?? 0) + 1
+    const key = eventPlayerKey(e)
+    if (e.tipo === 'gol') gols[key] = (gols[key] ?? 0) + 1
+    if (e.tipo === 'assistencia') assists[key] = (assists[key] ?? 0) + 1
   })
 
   const artilheiro = Object.entries(gols)
     .sort((a, b) => b[1] - a[1])
-    .map(([id, total]) => ({ profile: jogadores.find(j => j.id === id), total }))
+    .map(([key, total]) => ({ profile: jogadores.find(j => playerKey(j) === key), total }))
     .filter(x => x.profile)
 
   const garcom = Object.entries(assists)
     .sort((a, b) => b[1] - a[1])
-    .map(([id, total]) => ({ profile: jogadores.find(j => j.id === id), total }))
+    .map(([key, total]) => ({ profile: jogadores.find(j => playerKey(j) === key), total }))
     .filter(x => x.profile)
 
   return { artilheiro, garcom }

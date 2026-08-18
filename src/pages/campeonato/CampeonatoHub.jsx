@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Trophy, Swords, Star, User } from 'lucide-react'
-import { cn, teamDotStyle } from '@/lib/utils'
+import { cn, teamDotStyle, playerKey } from '@/lib/utils'
 import { useCampeonato } from '@/context/CampeonatoContext'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -254,8 +254,8 @@ function TabDestaques() {
   const { artilheiro, garcom } = estatisticas
 
   const mvps = partidas
-    .filter(p => p.mvp && p.status === 'encerrada')
-    .map(p => ({ partida: p, mvp: p.mvp }))
+    .filter(p => (p.mvp || p.mvp_is_guest) && p.status === 'encerrada')
+    .map(p => ({ partida: p, mvp: p.mvp_is_guest ? { nome: p.mvp_guest_nome, foto_url: null } : p.mvp }))
 
   return (
     <div className="space-y-4">
@@ -267,7 +267,7 @@ function TabDestaques() {
         </div>
         {artilheiro.length === 0
           ? <p className="text-text-muted text-sm px-4 py-4">Nenhum gol registrado.</p>
-          : artilheiro.slice(0, 5).map((a, i) => <DestaqueLinha key={a.profile.id} rank={i + 1} profile={a.profile} total={a.total} label="gol" />)
+          : artilheiro.slice(0, 5).map((a, i) => <DestaqueLinha key={playerKey(a.profile)} rank={i + 1} profile={a.profile} total={a.total} label="gol" />)
         }
       </div>
 
@@ -279,7 +279,7 @@ function TabDestaques() {
         </div>
         {garcom.length === 0
           ? <p className="text-text-muted text-sm px-4 py-4">Nenhuma assistência registrada.</p>
-          : garcom.slice(0, 5).map((a, i) => <DestaqueLinha key={a.profile.id} rank={i + 1} profile={a.profile} total={a.total} label="assist" />)
+          : garcom.slice(0, 5).map((a, i) => <DestaqueLinha key={playerKey(a.profile)} rank={i + 1} profile={a.profile} total={a.total} label="assist" />)
         }
       </div>
 

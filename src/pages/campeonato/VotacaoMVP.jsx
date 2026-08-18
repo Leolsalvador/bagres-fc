@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Star, User, Check, Trophy, Play, ArrowLeft } from 'lucide-react'
-import { cn, teamDotStyle } from '@/lib/utils'
+import { cn, teamDotStyle, playerKey, eventPlayerKey } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useCampeonato } from '@/context/CampeonatoContext'
@@ -51,19 +51,20 @@ export default function VotacaoMVP() {
 
   async function loadVotos() {
     const [{ data: v }, { data: meu }] = await Promise.all([
-      supabase.from('campeonato_votos_mvp').select('jogador_id').eq('partida_id', partidaId),
-      supabase.from('campeonato_votos_mvp').select('jogador_id').eq('partida_id', partidaId).eq('votante_id', user.id).maybeSingle(),
+      supabase.from('campeonato_votos_mvp').select('jogador_id, is_guest, guest_nome, guest_time_jogador_id').eq('partida_id', partidaId),
+      supabase.from('campeonato_votos_mvp').select('jogador_id, is_guest, guest_nome, guest_time_jogador_id').eq('partida_id', partidaId).eq('votante_id', user.id).maybeSingle(),
     ])
     setVotos(v ?? [])
-    setMeuVoto(meu?.jogador_id ?? null)
+    setMeuVoto(meu ? eventPlayerKey(meu) : null)
     setLoading(false)
   }
 
-  async function votar(jogadorId) {
+  async function votar(jogador) {
     if (salvando || !partida?.votacao_mvp_aberta) return
     setSalvando(true)
+    const key = playerKey(jogador)
 
-    if (meuVoto === jogadorId) {
+    if (meuVoto === key) {
       // Deselect
       if (!USE_MOCK) {
         await supabase.from('campeonato_votos_mvp')
@@ -72,18 +73,18 @@ export default function VotacaoMVP() {
           .eq('votante_id', user.id)
       }
       setMeuVoto(null)
-      setVotos(v => { const i = v.findIndex(vt => vt.jogador_id === jogadorId); return i >= 0 ? [...v.slice(0, i), ...v.slice(i + 1)] : v })
+      setVotos(v => { const i = v.findIndex(vt => eventPlayerKey(vt) === key); return i >= 0 ? [...v.slice(0, i), ...v.slice(i + 1)] : v })
     } else {
+      const payload = jogador.is_guest
+        ? { partida_id: partidaId, votante_id: user.id, jogador_id: null, is_guest: true, guest_nome: jogador.nome, guest_time_jogador_id: jogador.tj_id }
+        : { partida_id: partidaId, votante_id: user.id, jogador_id: jogador.id, is_guest: false, guest_nome: null, guest_time_jogador_id: null }
       if (!USE_MOCK) {
         const { error } = await supabase.from('campeonato_votos_mvp')
-          .upsert(
-            { partida_id: partidaId, votante_id: user.id, jogador_id: jogadorId },
-            { onConflict: 'partida_id,votante_id' }
-          )
-        if (!error) setMeuVoto(jogadorId)
+          .upsert(payload, { onConflict: 'partida_id,votante_id' })
+        if (!error) setMeuVoto(key)
       } else {
-        setMeuVoto(jogadorId)
-        setVotos(v => [...v.filter(vt => vt.jogador_id !== meuVoto), { jogador_id: jogadorId }])
+        setMeuVoto(key)
+        setVotos(v => [...v.filter(vt => eventPlayerKey(vt) !== meuVoto), payload])
       }
     }
 
@@ -94,10 +95,14 @@ export default function VotacaoMVP() {
   async function fecharVotacao() {
     if (!partida) return
     const contagem = {}
-    votos.forEach(v => { contagem[v.jogador_id] = (contagem[v.jogador_id] ?? 0) + 1 })
-    const mvpId = Object.entries(contagem).sort((a, b) => b[1] - a[1])[0]?.[0]
+    votos.forEach(v => { const key = eventPlayerKey(v); contagem[key] = (contagem[key] ?? 0) + 1 })
+    const winnerKey = Object.entries(contagem).sort((a, b) => b[1] - a[1])[0]?.[0]
+    const winner = winnerKey ? [...jogadoresCasa, ...jogadoresVisitante].find(j => playerKey(j) === winnerKey) : null
 
-    const updates = { votacao_mvp_aberta: false, mvp_id: mvpId ?? null }
+    const updates = winner?.is_guest
+      ? { votacao_mvp_aberta: false, mvp_id: null, mvp_is_guest: true, mvp_guest_nome: winner.nome }
+      : { votacao_mvp_aberta: false, mvp_id: winner?.id ?? null, mvp_is_guest: false, mvp_guest_nome: null }
+
     if (!USE_MOCK) {
       await supabase.from('campeonato_partidas').update(updates).eq('id', partidaId)
       refresh()
@@ -158,9 +163,11 @@ export default function VotacaoMVP() {
   // ── Voting / reveal ──
   const votacaoAberta = partida.votacao_mvp_aberta
   const contagemVotos = {}
-  votos.forEach(v => { contagemVotos[v.jogador_id] = (contagemVotos[v.jogador_id] ?? 0) + 1 })
+  votos.forEach(v => { const key = eventPlayerKey(v); contagemVotos[key] = (contagemVotos[key] ?? 0) + 1 })
   const totalVotos = votos.length
-  const mvpId = Object.entries(contagemVotos).sort((a, b) => b[1] - a[1])[0]?.[0]
+  const mvpKey = Object.entries(contagemVotos).sort((a, b) => b[1] - a[1])[0]?.[0]
+  const mvpNome = partida.mvp_is_guest ? partida.mvp_guest_nome : partida.mvp?.nome
+  const mvpFoto = partida.mvp_is_guest ? null : partida.mvp?.foto_url
 
   const meusEventos = eventosPartida.filter(e => e.jogador_id === user?.id)
   const meusGols = meusEventos.filter(e => e.tipo === 'gol').length
@@ -198,16 +205,16 @@ export default function VotacaoMVP() {
       </div>
 
       {/* MVP revelado */}
-      {!votacaoAberta && partida.mvp && (
+      {!votacaoAberta && mvpNome && (
         <div className="mx-4 mb-4 bg-secondary/10 rounded-2xl p-5 flex flex-col items-center gap-3 border border-secondary/30">
           <Trophy size={28} className="text-secondary" />
           <div className="w-16 h-16 rounded-full overflow-hidden bg-elevated flex items-center justify-center">
-            {partida.mvp.foto_url
-              ? <img src={partida.mvp.foto_url} alt={partida.mvp.nome} className="w-full h-full object-contain" />
+            {mvpFoto
+              ? <img src={mvpFoto} alt={mvpNome} className="w-full h-full object-contain" />
               : <User size={24} className="text-text-muted" />}
           </div>
           <div className="text-center">
-            <p className="text-lg font-black text-text-main">{partida.mvp.nome}</p>
+            <p className="text-lg font-black text-text-main">{mvpNome}</p>
             <p className="text-secondary text-xs font-semibold">MVP da Partida ⭐</p>
           </div>
           <p className="text-xs text-text-muted">{totalVotos} voto{totalVotos !== 1 ? 's' : ''}</p>
@@ -226,7 +233,7 @@ export default function VotacaoMVP() {
               .map((ev, i) => {
                 const icon = ev.tipo === 'gol' ? '⚽' : ev.tipo === 'assistencia' ? '🅰️' : ev.tipo === 'cartao_amarelo' ? '🟨' : '🟥'
                 const label = ev.tipo === 'gol' ? 'Gol' : ev.tipo === 'assistencia' ? 'Assistência' : ev.tipo === 'cartao_amarelo' ? 'Cartão Amarelo' : 'Cartão Vermelho'
-                const nome = ev.profiles?.nome ?? ev.nome ?? '—'
+                const nome = ev.profiles?.nome ?? ev.guest_nome ?? '—'
                 const teamCor = ev.campeonato_times?.cor
                 return (
                   <div key={i} className="px-4 py-2.5 flex items-center gap-3">
@@ -247,7 +254,7 @@ export default function VotacaoMVP() {
       <div className="mx-4 mb-4 bg-card rounded-2xl overflow-hidden">
         <div className="px-4 py-2.5 border-b border-border flex items-center gap-2">
           <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Minha Partida</span>
-          {mvpId === user?.id && !votacaoAberta && (
+          {mvpKey === user?.id && !votacaoAberta && (
             <span className="ml-auto text-[10px] font-bold text-secondary uppercase tracking-wider">⭐ MVP</span>
           )}
         </div>
@@ -294,15 +301,16 @@ export default function VotacaoMVP() {
             </div>
             <div className="divide-y divide-border/50">
               {jgs.map(j => {
-                const qtd = contagemVotos[j.id] ?? 0
+                const key = playerKey(j)
+                const qtd = contagemVotos[key] ?? 0
                 const percent = totalVotos > 0 ? (qtd / totalVotos) * 100 : 0
-                const isMeuVoto = meuVoto === j.id
-                const isMVP = mvpId === j.id && !votacaoAberta
+                const isMeuVoto = meuVoto === key
+                const isMVP = mvpKey === key && !votacaoAberta
 
                 return (
                   <button
-                    key={j.id}
-                    onClick={() => votar(j.id)}
+                    key={key}
+                    onClick={() => votar(j)}
                     disabled={!votacaoAberta || salvando}
                     className={cn(
                       'w-full px-4 py-3 flex items-center gap-3 relative overflow-hidden transition-colors',
@@ -462,7 +470,7 @@ function LiveFieldSide({ players, cor, side }) {
       {displayRows.map((row, ri) => (
         <div key={ri} className={cn('flex px-3', row.length === 1 ? 'justify-center' : 'justify-around')}>
           {row.filter(Boolean).map(p => (
-            <div key={p.id} className="flex flex-col items-center gap-0.5">
+            <div key={playerKey(p)} className="flex flex-col items-center gap-0.5">
               <div className="w-8 h-8 rounded-full border-2 overflow-hidden bg-green-800" style={{ borderColor: cor }}>
                 {p.foto_url
                   ? <img src={p.foto_url} alt={p.nome} className="w-full h-full object-contain" />

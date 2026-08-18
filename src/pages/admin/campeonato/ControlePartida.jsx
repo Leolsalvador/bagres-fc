@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Play, Pause, RotateCcw, ArrowLeft, User } from 'lucide-react'
-import { cn, teamDotStyle } from '@/lib/utils'
+import { cn, teamDotStyle, playerKey } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useCampeonato } from '@/context/CampeonatoContext'
@@ -361,15 +361,22 @@ function PartidaControle({ partida: initialPartida, jogadores, times, eventosIni
     return Math.max(1, Math.ceil((dur - seconds) / 60))
   }
 
-  async function handleAddGol(jogadorId, timeId, assistenciaId) {
+  function montarEvento(jogador, timeId, tipo, minuto, faseNum) {
+    const base = { partida_id: partida.id, time_id: timeId, tipo, minuto, half: faseNum, campeonato_id: partida.campeonato_id }
+    return jogador.is_guest
+      ? { ...base, jogador_id: null, is_guest: true, guest_nome: jogador.nome, guest_time_jogador_id: jogador.tj_id }
+      : { ...base, jogador_id: jogador.id }
+  }
+
+  async function handleAddGol(scorer, timeId, assistente) {
     const isCasa = timeId === partida.time_casa_id
     const campo = isCasa ? 'gols_casa' : 'gols_visitante'
     const novoGol = (isCasa ? partida.gols_casa : partida.gols_visitante) + 1
     const minuto = getMinuto()
     const faseNum = fase !== 'i' ? fase : null
 
-    const evs = [{ partida_id: partida.id, jogador_id: jogadorId, time_id: timeId, tipo: 'gol', minuto, half: faseNum, campeonato_id: partida.campeonato_id }]
-    if (assistenciaId) evs.push({ partida_id: partida.id, jogador_id: assistenciaId, time_id: timeId, tipo: 'assistencia', minuto, half: faseNum, campeonato_id: partida.campeonato_id })
+    const evs = [montarEvento(scorer, timeId, 'gol', minuto, faseNum)]
+    if (assistente) evs.push(montarEvento(assistente, timeId, 'assistencia', minuto, faseNum))
 
     if (!USE_MOCK) {
       await Promise.all([
@@ -379,27 +386,21 @@ function PartidaControle({ partida: initialPartida, jogadores, times, eventosIni
     }
     setPartida(p => ({ ...p, [campo]: novoGol }))
 
-    const scorer = [...jogadoresCasa, ...jogadoresVisitante].find(j => j.id === jogadorId)
-    const assist = assistenciaId ? [...jogadoresCasa, ...jogadoresVisitante].find(j => j.id === assistenciaId) : null
     setLocalEventos(ev => [
       ...ev,
-      { tipo: 'gol', nome: scorer?.nome, minuto },
-      ...(assist ? [{ tipo: 'assistencia', nome: assist.nome, minuto }] : []),
+      { tipo: 'gol', nome: scorer.nome, minuto },
+      ...(assistente ? [{ tipo: 'assistencia', nome: assistente.nome, minuto }] : []),
     ])
     setShowGolModal(false)
   }
 
-  async function handleAddCartao(jogadorId, timeId, tipo) {
+  async function handleAddCartao(jogador, timeId, tipo) {
     const minuto = getMinuto()
     const faseNum = fase !== 'i' ? fase : null
     if (!USE_MOCK) {
-      await supabase.from('campeonato_eventos').insert({
-        partida_id: partida.id, jogador_id: jogadorId, time_id: timeId,
-        tipo, minuto, half: faseNum, campeonato_id: partida.campeonato_id,
-      })
+      await supabase.from('campeonato_eventos').insert(montarEvento(jogador, timeId, tipo, minuto, faseNum))
     }
-    const jogador = [...jogadoresCasa, ...jogadoresVisitante].find(j => j.id === jogadorId)
-    setLocalEventos(ev => [...ev, { tipo, nome: jogador?.nome, minuto }])
+    setLocalEventos(ev => [...ev, { tipo, nome: jogador.nome, minuto }])
     setShowCartaoModal(false)
   }
 
@@ -642,7 +643,7 @@ function FieldSide({ players, cor, side }) {
       {displayRows.map((row, ri) => (
         <div key={ri} className={cn('flex px-3', row.length === 1 ? 'justify-center' : 'justify-around')}>
           {row.filter(Boolean).map(p => (
-            <div key={p.id} className="flex flex-col items-center gap-0.5">
+            <div key={playerKey(p)} className="flex flex-col items-center gap-0.5">
               <div
                 className="w-8 h-8 rounded-full border-2 overflow-hidden bg-green-800"
                 style={{ borderColor: cor }}
@@ -679,18 +680,18 @@ function GolModal({ jogadoresCasa, jogadoresVisitante, timeCasa, timeVisitante, 
   const [assistencia, setAssistencia] = useState(null)
 
   function selectArtilheiro(jogador, timeId) {
-    setArtilheiro({ id: jogador.id, timeId })
+    setArtilheiro({ jogador, timeId })
     setStep('assistencia')
   }
 
   function confirmar() {
     if (!artilheiro) return
-    onConfirm(artilheiro.id, artilheiro.timeId, assistencia)
+    onConfirm(artilheiro.jogador, artilheiro.timeId, assistencia)
   }
 
   const artilheiroTeamPlayers = !artilheiro ? [] : artilheiro.timeId === timeCasaId
-    ? jogadoresCasa.filter(j => j.id !== artilheiro.id)
-    : jogadoresVisitante.filter(j => j.id !== artilheiro.id)
+    ? jogadoresCasa.filter(j => playerKey(j) !== playerKey(artilheiro.jogador))
+    : jogadoresVisitante.filter(j => playerKey(j) !== playerKey(artilheiro.jogador))
 
   return (
     <BottomSheet
@@ -707,7 +708,7 @@ function GolModal({ jogadoresCasa, jogadoresVisitante, timeCasa, timeVisitante, 
           <p className="text-text-muted text-xs mb-3">Opcional — pule se não houve</p>
           <div className="space-y-1">
             {artilheiroTeamPlayers.map(j => (
-              <PlayerBtn key={j.id} jogador={j} selected={assistencia === j.id} onSelect={() => setAssistencia(j.id)} />
+              <PlayerBtn key={playerKey(j)} jogador={j} selected={assistencia && playerKey(assistencia) === playerKey(j)} onSelect={() => setAssistencia(j)} />
             ))}
           </div>
           <div className="flex gap-2 mt-4 pt-3 border-t border-border">
@@ -733,10 +734,10 @@ function GolModal({ jogadoresCasa, jogadoresVisitante, timeCasa, timeVisitante, 
 // ── Cartão Modal ──────────────────────────────────────────────
 function CartaoModal({ jogadoresCasa, jogadoresVisitante, timeCasa, timeVisitante, timeCasaId, timeVisitanteId, onConfirm, onClose }) {
   const [step, setStep] = useState('jogador') // 'jogador' | 'tipo'
-  const [jogador, setJogador] = useState(null)  // { id, timeId }
+  const [jogador, setJogador] = useState(null)  // { jogador, timeId }
 
   function selectJogador(j, timeId) {
-    setJogador({ id: j.id, timeId })
+    setJogador({ jogador: j, timeId })
     setStep('tipo')
   }
 
@@ -755,14 +756,14 @@ function CartaoModal({ jogadoresCasa, jogadoresVisitante, timeCasa, timeVisitant
           <p className="text-text-muted text-xs mb-4">Selecione o tipo de cartão</p>
           <div className="flex gap-3">
             <button
-              onClick={() => onConfirm(jogador.id, jogador.timeId, 'cartao_amarelo')}
+              onClick={() => onConfirm(jogador.jogador, jogador.timeId, 'cartao_amarelo')}
               className="flex-1 bg-secondary/10 border-2 border-secondary/30 rounded-2xl py-6 flex flex-col items-center gap-2 active:scale-95 transition-transform"
             >
               <span className="text-3xl">🟨</span>
               <span className="text-secondary font-bold text-sm">Amarelo</span>
             </button>
             <button
-              onClick={() => onConfirm(jogador.id, jogador.timeId, 'cartao_vermelho')}
+              onClick={() => onConfirm(jogador.jogador, jogador.timeId, 'cartao_vermelho')}
               className="flex-1 bg-danger/10 border-2 border-danger/30 rounded-2xl py-6 flex flex-col items-center gap-2 active:scale-95 transition-transform"
             >
               <span className="text-3xl">🟥</span>
@@ -804,7 +805,7 @@ function TimeSection({ time, jogadores, onSelect }) {
       </div>
       <div className="space-y-1">
         {jogadores.map(j => (
-          <PlayerBtn key={j.id} jogador={j} onSelect={() => onSelect(j)} />
+          <PlayerBtn key={playerKey(j)} jogador={j} onSelect={() => onSelect(j)} />
         ))}
       </div>
     </div>

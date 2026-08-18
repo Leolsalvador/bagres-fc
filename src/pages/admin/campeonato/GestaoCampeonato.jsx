@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Trash2, ChevronDown, Eye, EyeOff, Trophy, Play, Users, Shuffle, X } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, Eye, EyeOff, Trophy, Play, Users, Shuffle, X, Pencil } from 'lucide-react'
 import { cn, teamDotStyle } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -323,7 +323,10 @@ function GrupoEditor({ campeonatoId, grupo, times, onRefresh }) {
   }
 
   async function removeTime(id) {
-    await supabase.from('campeonato_times').delete().eq('id', id)
+    if (!window.confirm('Excluir este time? As partidas geradas envolvendo ele também serão removidas.')) return
+    await supabase.from('campeonato_partidas').delete().or(`time_casa_id.eq.${id},time_visitante_id.eq.${id}`)
+    const { error } = await supabase.from('campeonato_times').delete().eq('id', id)
+    if (error) { alert('Erro ao excluir time: ' + error.message); return }
     onRefresh()
   }
 
@@ -379,7 +382,11 @@ function TimeRow({ time, campeonatoId, onRemove, onRefresh }) {
   const [showAddPanel, setShowAddPanel] = useState(false)
   const [search, setSearch] = useState('')
   const [allAllocated, setAllAllocated] = useState(new Set())
-  const [showColorPicker, setShowColorPicker] = useState(false)
+  const [showEditor, setShowEditor] = useState(false)
+  const [nomeEdit, setNomeEdit] = useState(time.nome)
+  const [guestNome, setGuestNome] = useState('')
+
+  useEffect(() => { setNomeEdit(time.nome) }, [time.nome])
 
   async function load() {
     setLoading(true)
@@ -387,7 +394,7 @@ function TimeRow({ time, campeonatoId, onRemove, onRefresh }) {
     const allTeamIds = (allTeams ?? []).map(t => t.id)
 
     const [{ data: jt }, { data: profiles }, { data: allocated }] = await Promise.all([
-      supabase.from('campeonato_time_jogadores').select('jogador_id, profiles(id, nome)').eq('time_id', time.id),
+      supabase.from('campeonato_time_jogadores').select('id, jogador_id, is_guest, guest_nome, profiles(id, nome)').eq('time_id', time.id),
       supabase.from('profiles').select('id, nome').eq('status', 'aprovado').order('nome'),
       allTeamIds.length > 0
         ? supabase.from('campeonato_time_jogadores').select('jogador_id').in('time_id', allTeamIds)
@@ -409,13 +416,26 @@ function TimeRow({ time, campeonatoId, onRemove, onRefresh }) {
     load(); onRefresh()
   }
 
-  async function removeJogador(jogadorId) {
-    await supabase.from('campeonato_time_jogadores').delete().eq('time_id', time.id).eq('jogador_id', jogadorId)
+  async function addGuest() {
+    if (!guestNome.trim()) return
+    await supabase.from('campeonato_time_jogadores').insert({ time_id: time.id, is_guest: true, guest_nome: guestNome.trim() })
+    setGuestNome('')
+    load(); onRefresh()
+  }
+
+  async function removeTimeJogador(tjId) {
+    await supabase.from('campeonato_time_jogadores').delete().eq('id', tjId)
     load(); onRefresh()
   }
 
   async function updateCor(field, value) {
     await supabase.from('campeonato_times').update({ [field]: value }).eq('id', time.id)
+    onRefresh()
+  }
+
+  async function updateNome() {
+    if (!nomeEdit.trim() || nomeEdit.trim() === time.nome) return
+    await supabase.from('campeonato_times').update({ nome: nomeEdit.trim() }).eq('id', time.id)
     onRefresh()
   }
 
@@ -427,7 +447,7 @@ function TimeRow({ time, campeonatoId, onRemove, onRefresh }) {
       {/* Cabeçalho do time — clicável */}
       <button onClick={toggle} className="w-full px-4 py-3 flex items-center gap-3 active:bg-white/5 transition-colors">
         <button
-          onClick={e => { e.stopPropagation(); setShowColorPicker(v => !v) }}
+          onClick={e => { e.stopPropagation(); setShowEditor(v => !v) }}
           className="w-5 h-5 rounded-full shrink-0 ring-2 ring-offset-2 ring-offset-card ring-transparent active:ring-white/30 transition-all"
           style={teamDotStyle(time)}
         />
@@ -435,6 +455,12 @@ function TimeRow({ time, campeonatoId, onRemove, onRefresh }) {
         <span className="text-xs text-text-muted flex items-center gap-1 shrink-0">
           <Users size={11} /> {inscritosCount}
         </span>
+        <button
+          onClick={e => { e.stopPropagation(); setShowEditor(v => !v) }}
+          className="p-1.5 rounded-lg bg-elevated text-text-muted active:scale-95 shrink-0"
+        >
+          <Pencil size={13} />
+        </button>
         <ChevronDown size={14} className={cn('text-text-muted transition-transform shrink-0', open && 'rotate-180')} />
         <button
           onClick={e => { e.stopPropagation(); onRemove() }}
@@ -444,9 +470,27 @@ function TimeRow({ time, campeonatoId, onRemove, onRefresh }) {
         </button>
       </button>
 
-      {/* Seletor de cor */}
-      {showColorPicker && (
+      {/* Editor: nome + cores */}
+      {showEditor && (
         <div className="px-4 py-3 border-t border-border/50 bg-background/40 space-y-3">
+          <div>
+            <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">Nome do time</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={nomeEdit}
+                onChange={e => setNomeEdit(e.target.value)}
+                className="flex-1 bg-input text-text-main rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+              />
+              <button
+                onClick={updateNome}
+                disabled={!nomeEdit.trim() || nomeEdit.trim() === time.nome}
+                className="text-xs font-bold text-black bg-primary rounded-xl px-3 py-2 disabled:opacity-40 shrink-0"
+              >
+                Salvar
+              </button>
+            </div>
+          </div>
           <div>
             <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">Cor principal</p>
             <ColorSwatchRow value={time.cor} onChange={c => updateCor('cor', c)} />
@@ -473,9 +517,14 @@ function TimeRow({ time, campeonatoId, onRemove, onRefresh }) {
                   <p className="text-text-muted text-xs px-5 py-3">Nenhum jogador no time.</p>
                 )}
                 {jogadoresTimes.map(jt => (
-                  <div key={jt.jogador_id} className="flex items-center px-5 py-2.5 gap-3">
-                    <span className="text-sm text-text-main font-medium flex-1">{jt.profiles?.nome ?? '—'}</span>
-                    <button onClick={() => removeJogador(jt.jogador_id)} className="text-xs text-danger font-semibold px-2 py-1 rounded-lg bg-danger/10">Remover</button>
+                  <div key={jt.id} className="flex items-center px-5 py-2.5 gap-3">
+                    <span className="text-sm text-text-main font-medium flex-1">
+                      {jt.is_guest ? jt.guest_nome : jt.profiles?.nome ?? '—'}
+                    </span>
+                    {jt.is_guest && (
+                      <span className="text-[10px] font-bold text-secondary uppercase tracking-wider">Convidado</span>
+                    )}
+                    <button onClick={() => removeTimeJogador(jt.id)} className="text-xs text-danger font-semibold px-2 py-1 rounded-lg bg-danger/10">Remover</button>
                   </div>
                 ))}
               </div>
@@ -512,6 +561,24 @@ function TimeRow({ time, campeonatoId, onRemove, onRefresh }) {
                           <button onClick={() => addJogador(p.id)} className="text-xs text-primary font-semibold px-2 py-1 rounded-lg bg-primary/10">Adicionar</button>
                         </div>
                       ))}
+                  </div>
+
+                  {/* Convidado — jogador sem conta no app */}
+                  <div className="px-5 py-3 border-t border-border/30 flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Nome do convidado"
+                      value={guestNome}
+                      onChange={e => setGuestNome(e.target.value)}
+                      className="flex-1 bg-elevated text-text-main placeholder-text-muted rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-secondary"
+                    />
+                    <button
+                      onClick={addGuest}
+                      disabled={!guestNome.trim()}
+                      className="text-xs text-secondary font-semibold px-3 py-2 rounded-lg bg-secondary/10 disabled:opacity-50 shrink-0"
+                    >
+                      Add. convidado
+                    </button>
                   </div>
                 </div>
               )}
