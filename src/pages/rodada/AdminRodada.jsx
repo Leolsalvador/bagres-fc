@@ -379,7 +379,7 @@ export default function AdminRodada() {
       {rodada.status === 'sorteada' && (
         <div className="px-4 pb-6 space-y-4">
           {teams
-            ? <TeamsGrid teams={teams} />
+            ? <TeamsGrid teams={teams} onSwap={applyManualTeams} />
             : <p className="text-text-muted text-center py-8 text-sm">Nenhum sorteio realizado.</p>
           }
           <div className="flex gap-3">
