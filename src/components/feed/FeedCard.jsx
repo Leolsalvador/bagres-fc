@@ -1,10 +1,9 @@
 import { useState } from 'react'
-import { MessageCircle, Share2, Trash2, X } from 'lucide-react'
+import { MessageCircle, Share2, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { deleteFeedPost, toggleReaction } from '@/lib/api'
+import { deleteFeedPost } from '@/lib/api'
 import { shareLink } from '@/lib/utils'
-
-const EMOJIS = ['❤️', '👍', '😂', '🔥', '😮', '👏', '🍆']
+import { useReactions, ReactionBubbles, ReactionsSummaryButton, ReactionListModal } from '@/components/feed/Reactions'
 
 function timeAgo(dateStr) {
   const diff = (Date.now() - new Date(dateStr).getTime()) / 1000
@@ -14,105 +13,12 @@ function timeAgo(dateStr) {
   return `${Math.floor(diff / 86400)}d`
 }
 
-function ReactionListModal({ reactions, onClose }) {
-  const emojisWithReactions = [...new Set(reactions.map(r => r.emoji))]
-  const [activeEmoji, setActiveEmoji] = useState(emojisWithReactions[0] ?? '')
-
-  const filtered = reactions.filter(r => r.emoji === activeEmoji)
-
-  return (
-    <div
-      className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-lg bg-card rounded-t-2xl pb-16"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Handle + close */}
-        <div className="flex items-center justify-between px-4 pt-3 pb-2">
-          <div className="w-10 h-1 bg-white/20 rounded-full mx-auto absolute left-1/2 -translate-x-1/2 top-3" />
-          <span className="text-text-main font-semibold text-sm">Reações</span>
-          <button onClick={onClose} className="text-text-muted active:scale-90 transition-transform">
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Emoji tabs */}
-        <div className="flex gap-1 px-4 pb-3 border-b border-white/10 overflow-x-auto">
-          {emojisWithReactions.map(emoji => {
-            const count = reactions.filter(r => r.emoji === emoji).length
-            return (
-              <button
-                key={emoji}
-                onClick={() => setActiveEmoji(emoji)}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors ${
-                  activeEmoji === emoji
-                    ? 'bg-primary/20 border border-primary/40 text-primary'
-                    : 'bg-[#1F2937] border border-white/10 text-text-muted'
-                }`}
-              >
-                <span>{emoji}</span>
-                <span className="font-medium text-xs">{count}</span>
-              </button>
-            )
-          })}
-        </div>
-
-        {/* User list */}
-        <div className="flex flex-col gap-0 max-h-64 overflow-y-auto">
-          {filtered.map(r => (
-            <div key={r.usuario_id} className="flex items-center gap-3 px-4 py-3">
-              <div className="w-9 h-9 rounded-full bg-background flex items-center justify-center overflow-hidden flex-shrink-0 ring-1 ring-primary/20">
-                {r.profiles?.foto_url
-                  ? <img src={r.profiles.foto_url} alt={r.profiles.nome} className="w-full h-full object-cover" />
-                  : <span className="text-lg">👤</span>
-                }
-              </div>
-              <span className="text-text-main text-sm font-medium">{r.profiles?.nome ?? '—'}</span>
-              <span className="ml-auto text-lg">{r.emoji}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="h-6" />
-      </div>
-    </div>
-  )
-}
-
 export default function FeedCard({ post, isAdmin, userId, onDeleted }) {
   const navigate = useNavigate()
   const commentCount = post.feed_comentarios?.[0]?.count ?? 0
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [reactions, setReactions] = useState(post.feed_reactions ?? [])
   const [modalOpen, setModalOpen] = useState(false)
-
-  // Group reactions by emoji
-  const grouped = {}
-  for (const r of reactions) {
-    if (!grouped[r.emoji]) grouped[r.emoji] = { count: 0, reacted: false }
-    grouped[r.emoji].count++
-    if (r.usuario_id === userId) grouped[r.emoji].reacted = true
-  }
-  const sortedReactions = Object.entries(grouped).sort((a, b) => b[1].count - a[1].count)
-
-  async function handleReact(emoji) {
-    if (!userId) return
-    setPickerOpen(false)
-    const alreadyReacted = grouped[emoji]?.reacted
-    setReactions(prev =>
-      alreadyReacted
-        ? prev.filter(r => !(r.usuario_id === userId && r.emoji === emoji))
-        : [...prev, { usuario_id: userId, emoji, profiles: null }]
-    )
-    try {
-      await toggleReaction(post.id, userId, emoji)
-    } catch (err) {
-      console.error(err)
-      setReactions(post.feed_reactions ?? [])
-    }
-  }
+  const { reactions, sortedReactions, handleReact } = useReactions(post, userId)
 
   async function handleDelete() {
     if (!confirm('Remover publicação?')) return
@@ -165,49 +71,12 @@ export default function FeedCard({ post, isAdmin, userId, onDeleted }) {
 
       {/* Reactions */}
       <div className="px-3 pt-2.5 pb-1">
-        {/* Emoji picker pill */}
-        {pickerOpen && (
-          <div
-            className="flex items-center gap-0.5 bg-[#111827] border border-white/10 rounded-full px-2 py-1 w-fit mb-2 shadow-lg"
-            onMouseLeave={() => setPickerOpen(false)}
-          >
-            {EMOJIS.map(e => (
-              <button
-                key={e}
-                onClick={() => handleReact(e)}
-                className="text-[22px] p-1 active:scale-75 transition-transform leading-none select-none"
-              >
-                {e}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Reaction bubbles + open-picker button */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {sortedReactions.map(([emoji, { count, reacted }]) => (
-            <button
-              key={emoji}
-              onClick={() => handleReact(emoji)}
-              className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-sm transition-colors active:scale-90 ${
-                reacted
-                  ? 'bg-primary/15 border-primary/40'
-                  : 'bg-[#1F2937] border-white/10'
-              }`}
-            >
-              <span className="leading-none">{emoji}</span>
-              <span className={`text-xs font-medium ${reacted ? 'text-primary' : 'text-text-muted'}`}>{count}</span>
-            </button>
-          ))}
-          <button
-            onClick={() => setPickerOpen(v => !v)}
-            className={`w-7 h-7 rounded-full border flex items-center justify-center transition-colors ${
-              pickerOpen ? 'bg-primary/15 border-primary/40' : 'bg-[#1F2937] border-white/10'
-            }`}
-          >
-            <span className="text-sm leading-none select-none">😊</span>
-          </button>
-        </div>
+        <ReactionBubbles
+          sortedReactions={sortedReactions}
+          pickerOpen={pickerOpen}
+          setPickerOpen={setPickerOpen}
+          onReact={handleReact}
+        />
       </div>
 
       {/* Caption + comment button */}
@@ -219,15 +88,7 @@ export default function FeedCard({ post, isAdmin, userId, onDeleted }) {
           </p>
         )}
         <div className="flex items-center gap-4">
-          {reactions.length > 0 && (
-            <button
-              onClick={() => setModalOpen(true)}
-              className="flex items-center gap-1.5 text-text-muted text-sm active:scale-95 transition-transform"
-            >
-              <span className="text-base leading-none">😊</span>
-              <span>{reactions.length} {reactions.length === 1 ? 'reação' : 'reações'}</span>
-            </button>
-          )}
+          <ReactionsSummaryButton count={reactions.length} onClick={() => setModalOpen(true)} />
           <button
             onClick={() => navigate(`/feed/${post.id}`)}
             className="flex items-center gap-1.5 text-text-muted text-sm active:scale-95 transition-transform"

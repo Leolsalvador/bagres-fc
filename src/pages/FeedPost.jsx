@@ -4,6 +4,7 @@ import { ArrowLeft, Send, Share2 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchFeedPost, fetchFeedComentarios, createFeedComentario } from '@/lib/api'
 import { shareLink } from '@/lib/utils'
+import { useReactions, ReactionBubbles, ReactionsSummaryButton, ReactionListModal } from '@/components/feed/Reactions'
 
 function timeAgo(dateStr) {
   const diff = (Date.now() - new Date(dateStr).getTime()) / 1000
@@ -35,6 +36,9 @@ export default function FeedPost() {
   const [texto, setTexto] = useState('')
   const [sending, setSending] = useState(false)
   const [showImage, setShowImage] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [reactionModalOpen, setReactionModalOpen] = useState(false)
+  const { reactions, sortedReactions, handleReact } = useReactions(post, profile?.id)
 
   useEffect(() => {
     fetchFeedPost(postId).then(setPost).catch(console.error)
@@ -90,13 +94,29 @@ export default function FeedPost() {
               className="w-full object-contain"
             />
           </button>
-          <div className="p-3">
+          <div className="px-3 pt-2.5">
+            <ReactionBubbles
+              sortedReactions={sortedReactions}
+              pickerOpen={pickerOpen}
+              setPickerOpen={setPickerOpen}
+              onReact={handleReact}
+            />
+          </div>
+          <div className="p-3 pt-1.5">
             <p className="text-text-main text-xs font-semibold">{post.profiles?.nome}</p>
             {post.legenda && (
               <p className="text-text-muted text-xs mt-1 leading-relaxed whitespace-pre-wrap">{post.legenda}</p>
             )}
+            <div className="mt-2">
+              <ReactionsSummaryButton count={reactions.length} onClick={() => setReactionModalOpen(true)} />
+            </div>
           </div>
         </div>
+      )}
+
+      {/* Reaction list modal */}
+      {reactionModalOpen && reactions.length > 0 && (
+        <ReactionListModal reactions={reactions} onClose={() => setReactionModalOpen(false)} />
       )}
 
       {/* Imagem em tela cheia */}
