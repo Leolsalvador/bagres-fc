@@ -34,6 +34,7 @@ export default function FeedPost() {
   const [comentarios, setComentarios] = useState([])
   const [texto, setTexto] = useState('')
   const [sending, setSending] = useState(false)
+  const [showImage, setShowImage] = useState(false)
 
   useEffect(() => {
     fetchFeedPost(postId).then(setPost).catch(console.error)
@@ -76,16 +77,19 @@ export default function FeedPost() {
         </button>
       </div>
 
-      {/* Post preview — compact thumbnail row */}
+      {/* Post preview — miniatura clicável + legenda compacta */}
       {post && (
         <div className="flex-shrink-0 mx-4 mb-3 flex items-center gap-3 bg-card rounded-2xl p-3">
-          <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-background">
+          <button
+            onClick={() => setShowImage(true)}
+            className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-background active:scale-95 transition-transform"
+          >
             <img
               src={post.imagem_url}
               alt={post.legenda ?? 'Post'}
               className="w-full h-full object-cover"
             />
-          </div>
+          </button>
           <div className="flex-1 min-w-0">
             <p className="text-text-main text-xs font-semibold truncate">{post.profiles?.nome}</p>
             {post.legenda
@@ -93,6 +97,20 @@ export default function FeedPost() {
               : <p className="text-text-muted text-xs mt-0.5 italic">Sem legenda</p>
             }
           </div>
+        </div>
+      )}
+
+      {/* Imagem em tela cheia */}
+      {showImage && post && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setShowImage(false)}
+        >
+          <img
+            src={post.imagem_url}
+            alt={post.legenda ?? 'Post'}
+            className="max-w-full max-h-full object-contain rounded-lg"
+          />
         </div>
       )}
 

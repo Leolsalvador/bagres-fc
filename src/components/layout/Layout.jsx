@@ -48,7 +48,9 @@ export default function Layout() {
       )}
 
       <main className="flex-1 overflow-y-auto pb-16">
-        <Outlet />
+        <div className="max-w-lg mx-auto">
+          <Outlet />
+        </div>
       </main>
       <BottomNav />
     </div>
