@@ -65,9 +65,9 @@ export default function FeedPost() {
   }
 
   return (
-    <div className="flex flex-col bg-background" style={{ height: 'calc(100dvh - 64px)' }}>
+    <div className="min-h-full flex flex-col bg-background">
       {/* Header */}
-      <div className="flex-shrink-0 flex items-center gap-3 px-4 pt-10 pb-3">
+      <div className="flex items-center gap-3 px-4 pt-10 pb-3">
         <button onClick={() => navigate(-1)} className="text-text-muted active:scale-90 transition-transform">
           <ArrowLeft size={22} />
         </button>
@@ -77,11 +77,9 @@ export default function FeedPost() {
         </button>
       </div>
 
-      {/* Post preview — foto bem visível + legenda; a caixa toda tem altura
-          máxima fixa (com scroll interno) pra nunca empurrar os comentários
-          e a caixa de digitar pra fora da tela, mesmo com legenda longa */}
+      {/* Post preview — foto e legenda em tamanho completo */}
       {post && (
-        <div className="flex-shrink-0 mx-4 mb-3 bg-card rounded-2xl overflow-hidden overflow-y-auto" style={{ maxHeight: '42vh' }}>
+        <div className="mx-4 mb-3 bg-card rounded-2xl overflow-hidden">
           <button
             onClick={() => setShowImage(true)}
             className="w-full flex items-center justify-center bg-background active:opacity-90 transition-opacity"
@@ -90,7 +88,6 @@ export default function FeedPost() {
               src={post.imagem_url}
               alt={post.legenda ?? 'Post'}
               className="w-full object-contain"
-              style={{ maxHeight: '28vh' }}
             />
           </button>
           <div className="p-3">
@@ -116,8 +113,8 @@ export default function FeedPost() {
         </div>
       )}
 
-      {/* Comments — scrollable area */}
-      <div className="flex-1 overflow-y-auto flex flex-col gap-3 px-4 py-4">
+      {/* Comments */}
+      <div className="flex flex-col gap-3 px-4 py-4">
         {comentarios.length === 0 && (
           <p className="text-text-muted text-sm text-center py-6">
             Nenhum comentário ainda. Seja o primeiro!
@@ -137,8 +134,8 @@ export default function FeedPost() {
         ))}
       </div>
 
-      {/* Comment input — fixed at bottom */}
-      <div className="flex-shrink-0 flex items-end gap-2 px-4 py-3 bg-[#111827] border-t border-[#1F2937]">
+      {/* Comment input — segue o conteúdo, rola junto com a página */}
+      <div className="mt-auto flex items-end gap-2 px-4 py-3 bg-[#111827] border-t border-[#1F2937]">
         <textarea
           value={texto}
           onChange={e => setTexto(e.target.value)}
