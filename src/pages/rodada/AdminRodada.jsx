@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Check, X, Trash2, Shuffle, Play, LogIn, XCircle, ChevronRight, ChevronDown, UserPlus, ArrowUp } from 'lucide-react'
+import { Check, X, Trash2, Shuffle, Play, LogIn, XCircle, ChevronRight, ChevronDown, UserPlus, ArrowUp, ClipboardPaste } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useRodada } from '@/context/RodadaContext'
 import { useAuth } from '@/hooks/useAuth'
@@ -11,6 +11,7 @@ import VotacaoRodada from './VotacaoRodada'
 import AddGuestModal from '@/components/rodada/AddGuestModal'
 import MontagemListaModal from '@/components/rodada/MontagemListaModal'
 import MontagemManualModal from '@/components/rodada/MontagemManualModal'
+import ImportarListaModal from '@/components/rodada/ImportarListaModal'
 
 const DEV_STATES = ['aguardando', 'aberta', 'sorteada', 'em_jogo', 'encerrada']
 
@@ -41,6 +42,7 @@ export default function AdminRodada() {
     validatePayment, rejectPayment, removeFromList, promotePlayerFromQueue,
     joinList, leaveList, addGuest,
     performDraw, applyManualTeams, addMatchResult, createNovaRodada,
+    refresh,
   } = useRodada()
   const { profile } = useAuth()
 
@@ -49,6 +51,7 @@ export default function AdminRodada() {
   const [onFieldWinner, setOnFieldWinner] = useState(null)
   const [guestModal, setGuestModal]             = useState(false)
   const [montagemModal, setMontagemModal]       = useState(false)
+  const [importarModal, setImportarModal]       = useState(false)
   const [montagemManual, setMontagemManual]     = useState(false)
 
   // ── Restaura estado ao voltar do background / bloqueio ──
@@ -233,6 +236,12 @@ export default function AdminRodada() {
               <LogIn size={15} /> Montar lista
             </button>
             <button
+              onClick={() => setImportarModal(true)}
+              className="flex-1 flex items-center justify-center gap-2 border border-border text-text-muted py-3 rounded-xl text-sm font-semibold active:scale-95 transition-transform"
+            >
+              <ClipboardPaste size={15} /> Importar do WhatsApp
+            </button>
+            <button
               onClick={closeList}
               className="w-full flex items-center justify-center gap-2 border border-danger/40 text-danger py-3 rounded-xl text-sm font-semibold active:scale-95 transition-transform"
             >
@@ -343,6 +352,16 @@ export default function AdminRodada() {
           onAdd={player => joinList(player.id, player)}
           onClear={clearPresencas}
           onClose={() => setMontagemModal(false)}
+        />
+      )}
+
+      {importarModal && (
+        <ImportarListaModal
+          rodadaId={rodada.id}
+          presencas={presencas}
+          onClear={clearPresencas}
+          onImported={refresh}
+          onClose={() => setImportarModal(false)}
         />
       )}
 
