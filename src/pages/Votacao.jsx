@@ -3,7 +3,7 @@ import { Star, RefreshCw, ShieldAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { useVotacao } from '@/context/VotacaoContext'
-import { fetchApprovedProfiles, saveVoto, fetchMyVotos } from '@/lib/api'
+import { fetchJogadores, saveVoto, fetchMyVotos } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 
 export default function Votacao() {
@@ -27,7 +27,7 @@ export default function Votacao() {
   // Busca jogadores aprovados e votos já dados neste ciclo
   const loadVotos = useCallback(async (currentVotos) => {
     if (!profile?.id || !ciclo?.id) return
-    const all = await fetchApprovedProfiles()
+    const all = await fetchJogadores()
     
     // Ordena alfabeticamente para a votação não ficar trocando de lugar em real-time
     all.sort((a, b) => a.nome.localeCompare(b.nome))

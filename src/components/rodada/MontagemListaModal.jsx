@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { X, Search, Plus, Check, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { fetchApprovedProfiles } from '@/lib/api'
+import { fetchJogadores } from '@/lib/api'
 
 export default function MontagemListaModal({ presencas, onAdd, onClear, onClose }) {
   const [players, setPlayers]       = useState([])
@@ -10,7 +10,7 @@ export default function MontagemListaModal({ presencas, onAdd, onClear, onClose 
   const [confirmClear, setConfirmClear] = useState(false)
 
   useEffect(() => {
-    fetchApprovedProfiles().then(setPlayers).catch(console.error)
+    fetchJogadores().then(setPlayers).catch(console.error)
   }, [])
 
   const presentIds = useMemo(

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, ClipboardPaste, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { fetchApprovedProfiles, insertPresenca, insertGuestPresenca } from '@/lib/api'
+import { fetchJogadores, insertPresenca, insertGuestPresenca } from '@/lib/api'
 import { parseWhatsappList, matchProfile } from '@/lib/listImport'
 
 const CONFIDENCE_STYLE = {
@@ -21,7 +21,7 @@ export default function ImportarListaModal({ rodadaId, presencas, onClear, onImp
   const [failures, setFailures] = useState([]) // [{ rawName, message }]
 
   useEffect(() => {
-    fetchApprovedProfiles().then(setProfiles).catch(console.error)
+    fetchJogadores().then(setProfiles).catch(console.error)
   }, [])
 
   function handleAnalyze() {

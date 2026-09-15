@@ -85,12 +85,28 @@ export async function fetchProfileById(id) {
   return data
 }
 
+// Todo mundo aprovado (jogadores, admins e telespectadores) — usar só quando
+// telespectador faz sentido na lista (ex: notificação pra todo mundo do app).
 export async function fetchApprovedProfiles() {
   if (USE_MOCK) return mockPlayers.filter(p => p.status === 'aprovado')
   const { data, error } = await supabase
     .from('profiles')
     .select(PROFILE_FIELDS)
     .eq('status', 'aprovado')
+    .order('rating', { ascending: false })
+  if (error) throw error
+  return data ?? []
+}
+
+// Só quem realmente joga (aprovado e não-telespectador) — usar em listas de
+// pelada, ranking de jogadores, votação e qualquer coisa relacionada a jogo.
+export async function fetchJogadores() {
+  if (USE_MOCK) return mockPlayers.filter(p => p.status === 'aprovado' && p.papel !== 'telespectador')
+  const { data, error } = await supabase
+    .from('profiles')
+    .select(PROFILE_FIELDS)
+    .eq('status', 'aprovado')
+    .neq('papel', 'telespectador')
     .order('rating', { ascending: false })
   if (error) throw error
   return data ?? []

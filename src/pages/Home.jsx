@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Star, ChevronDown, ChevronUp, Trophy, Flag } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { fetchApprovedProfiles, fetchRodadasEncerradas } from '@/lib/api'
+import { fetchJogadores, fetchRodadasEncerradas } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 
 const SORT_OPTIONS = [
@@ -21,7 +21,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([fetchApprovedProfiles(), fetchRodadasEncerradas()])
+    Promise.all([fetchJogadores(), fetchRodadasEncerradas()])
       .then(([ps, hs]) => { setPlayers(ps); setHistory(hs) })
       .catch(console.error)
       .finally(() => setLoading(false))
@@ -36,7 +36,7 @@ export default function Home() {
       })
       // Escuta reset de votos admin — refaz fetch completo para garantir ratings zerados
       .on('broadcast', { event: 'ratings-reset' }, () => {
-        fetchApprovedProfiles()
+        fetchJogadores()
           .then(ps => setPlayers(ps))
           .catch(console.error)
       })
