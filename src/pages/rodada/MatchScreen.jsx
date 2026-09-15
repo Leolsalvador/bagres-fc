@@ -57,6 +57,7 @@ export default function MatchScreen({ match, allTeams = [], teamAIndex, teamBInd
   const [subOutgoing, setSubOutgoing]   = useState(null) // { player, team: 'A'|'B' }
   const [drawNotice, setDrawNotice]     = useState(!!match.autoStart)
   const [pendingGoal, setPendingGoal]   = useState(null) // { player, team: 'A'|'B' }
+  const [editingEvent, setEditingEvent] = useState(null) // { idx, ev }
 
   const intervalRef  = useRef(null)
   const wakeLockRef  = useRef(null)
@@ -320,6 +321,27 @@ export default function MatchScreen({ match, allTeams = [], teamAIndex, teamBInd
     setAssistModal(false)
   }
 
+  function handleReassignEvent(newPlayer, newTeam) {
+    if (!editingEvent) return
+    const { idx, ev } = editingEvent
+    if (ev.type === 'gol' && ev.team !== newTeam) {
+      if (ev.team === 'A') setGoalsA(g => Math.max(0, g - 1)); else setGoalsB(g => Math.max(0, g - 1))
+      if (newTeam === 'A') setGoalsA(g => g + 1); else setGoalsB(g => g + 1)
+    }
+    setEvents(evs => evs.map((e, i) => i === idx ? { ...e, player: newPlayer, team: newTeam } : e))
+    setEditingEvent(null)
+  }
+
+  function handleRemoveEvent() {
+    if (!editingEvent) return
+    const { idx, ev } = editingEvent
+    if (ev.type === 'gol') {
+      if (ev.team === 'A') setGoalsA(g => Math.max(0, g - 1)); else setGoalsB(g => Math.max(0, g - 1))
+    }
+    setEvents(evs => evs.filter((_, i) => i !== idx))
+    setEditingEvent(null)
+  }
+
   function handleEndGame() {
     cancelSWAlarm()
     stopSilentAudio()
@@ -408,13 +430,17 @@ export default function MatchScreen({ match, allTeams = [], teamAIndex, teamBInd
         <FieldSide players={teamBPlayers} color={colorB} side="right" />
       </div>
 
-      {/* Eventos recentes */}
+      {/* Eventos recentes — toque pra corrigir ou remover */}
       {events.length > 0 && (
         <div className="px-4 mb-2 flex gap-2 overflow-x-auto">
-          {[...events].reverse().slice(0, 5).map((ev, i) => (
-            <span key={i} className="text-xs bg-card text-text-muted px-2 py-1 rounded-lg whitespace-nowrap shrink-0">
+          {events.map((ev, idx) => ({ ev, idx })).slice(-5).reverse().map(({ ev, idx }) => (
+            <button
+              key={idx}
+              onClick={() => setEditingEvent({ idx, ev })}
+              className="text-xs bg-card text-text-muted px-2 py-1 rounded-lg whitespace-nowrap shrink-0 active:scale-95 transition-transform"
+            >
               {ev.type === 'gol' ? '⚽' : '🅰️'} {ev.player.nome.split(' ')[0]} {ev.minute}'
-            </span>
+            </button>
           ))}
         </div>
       )}
@@ -498,6 +524,26 @@ export default function MatchScreen({ match, allTeams = [], teamAIndex, teamBInd
               ))}
             </>
           )}
+        </BottomSheet>
+      )}
+
+      {/* Modal: Editar/remover evento */}
+      {editingEvent && (
+        <BottomSheet
+          title={`Editar ${editingEvent.ev.type === 'gol' ? 'gol' : 'assistência'}`}
+          onClose={() => setEditingEvent(null)}
+        >
+          <p className="text-text-muted text-xs mb-3">
+            Registrado: {editingEvent.ev.player.nome} ({editingEvent.ev.minute}')
+          </p>
+          <TeamSection team={{ ...match.teamA, players: teamAPlayers }} color={colorA} onSelect={p => handleReassignEvent(p, 'A')} />
+          <TeamSection team={{ ...match.teamB, players: teamBPlayers }} color={colorB} onSelect={p => handleReassignEvent(p, 'B')} />
+          <button
+            onClick={handleRemoveEvent}
+            className="w-full mt-2 py-3 rounded-xl bg-danger/10 text-danger text-sm font-semibold active:scale-95 transition-transform"
+          >
+            Remover evento
+          </button>
         </BottomSheet>
       )}
 
