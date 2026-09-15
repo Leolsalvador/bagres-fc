@@ -47,8 +47,9 @@ export default function Usuarios() {
   }
 
   async function deleteUser(id) {
-    if (!confirm('Tem certeza que deseja excluir este usuário?')) return
-    await supabase.from('profiles').delete().eq('id', id)
+    if (!confirm('Tem certeza que deseja excluir este usuário? Isso apaga a conta e todas as estatísticas dele (gols, assistências, votos, posts, etc). Não pode ser desfeito.')) return
+    const { error } = await supabase.rpc('admin_delete_profile', { target_id: id })
+    if (error) { alert('Erro ao excluir usuário: ' + error.message); return }
     setProfiles(p => p.filter(u => u.id !== id))
   }
 
