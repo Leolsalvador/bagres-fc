@@ -92,9 +92,14 @@ export default function Votacao() {
     setIndex(i => i + 1)
   }
 
-  function handleReabrir() {
+  async function handleReabrir() {
     if (!window.confirm('Reabrir a votação vai apagar todos os votos anteriores e zerar o rating de todo mundo. Confirmar?')) return
-    reabrirVotacao()
+    try {
+      await reabrirVotacao()
+    } catch (err) {
+      console.error('Erro ao reabrir votação:', err)
+      alert('Erro ao reabrir votação. Verifique o console e certifique-se de que a função SQL foi criada no Supabase.')
+    }
   }
 
   async function handleVotarAdmin() {

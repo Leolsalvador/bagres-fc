@@ -33,21 +33,18 @@ export function VotacaoProvider({ children }) {
   }, [])
 
   async function reabrirVotacao() {
-    try {
-      // Apaga os votos de todos os ciclos anteriores e zera o rating de todo mundo
-      await clearAllVotosAndRatings()
-      supabase.channel('home-profiles').send({
-        type: 'broadcast',
-        event: 'ratings-reset',
-      }).catch(() => {})
+    // Apaga os votos de todos os ciclos anteriores e zera o rating de todo mundo.
+    // Não engole o erro — quem chama precisa saber se falhou (RPC ausente, etc).
+    await clearAllVotosAndRatings()
+    supabase.channel('home-profiles').send({
+      type: 'broadcast',
+      event: 'ratings-reset',
+    }).catch(() => {})
 
-      const novo = await createCiclo()
-      setCiclo(novo)
-      setVotacaoAbertaState(true)
-      sendPushNotification({ title: '⭐ Votação aberta!', body: 'Avalie seus colegas de pelada!' }).catch(() => {})
-    } catch (err) {
-      console.error('Erro ao reabrir votação:', err)
-    }
+    const novo = await createCiclo()
+    setCiclo(novo)
+    setVotacaoAbertaState(true)
+    sendPushNotification({ title: '⭐ Votação aberta!', body: 'Avalie seus colegas de pelada!' }).catch(() => {})
   }
 
   async function votarComoAdmin() {
