@@ -411,6 +411,7 @@ export default function AdminRodada() {
           ? <MatchScreen
               key={`${currentMatch.teamA.nome}-${currentMatch.teamB.nome}`}
               match={currentMatch}
+              allTeams={teams}
               teamAIndex={teams.findIndex(t => t.nome === currentMatch.teamA.nome)}
               teamBIndex={teams.findIndex(t => t.nome === currentMatch.teamB.nome)}
               isFirstMatch={matchHistory.length === 0}

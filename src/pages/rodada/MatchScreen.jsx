@@ -36,7 +36,7 @@ function formatTime(s) {
 
 const STORAGE_KEY = 'match-state'
 
-export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatch, onEnd, onBack }) {
+export default function MatchScreen({ match, allTeams = [], teamAIndex, teamBIndex, isFirstMatch, onEnd, onBack }) {
   const duration = isFirstMatch ? DURATION_FIRST : DURATION_NORMAL
   const [seconds, setSeconds]         = useState(duration)
   const [isRunning, setIsRunning]     = useState(false)
@@ -45,9 +45,16 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatc
   const [events, setEvents]           = useState([])
   const [timeExpired, setTimeExpired] = useState(false)
 
+  // Escalação desta partida — copia local dos jogadores dos times, editável
+  // via substituição sem alterar o time sorteado (vale só pra esta partida)
+  const [teamAPlayers, setTeamAPlayers] = useState(match.teamA.players)
+  const [teamBPlayers, setTeamBPlayers] = useState(match.teamB.players)
+
   // Modals
   const [goalModal, setGoalModal]       = useState(false)
   const [assistModal, setAssistModal]   = useState(false)
+  const [subModal, setSubModal]         = useState(false)
+  const [subOutgoing, setSubOutgoing]   = useState(null) // { player, team: 'A'|'B' }
   const [drawNotice, setDrawNotice]     = useState(!!match.autoStart)
   const [pendingGoal, setPendingGoal]   = useState(null) // { player, team: 'A'|'B' }
 
@@ -318,13 +325,34 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatc
     stopSilentAudio()
     localStorage.removeItem(STORAGE_KEY)
     const winner = goalsA > goalsB ? 'A' : goalsB > goalsA ? 'B' : 'draw'
-    onEnd({ teamA: match.teamA, teamB: match.teamB, goalsA, goalsB, winner, events })
+    onEnd({
+      teamA: { ...match.teamA, players: teamAPlayers },
+      teamB: { ...match.teamB, players: teamBPlayers },
+      goalsA, goalsB, winner, events,
+    })
   }
 
   const allPlayers = [
-    ...match.teamA.players.map(p => ({ ...p, team: 'A' })),
-    ...match.teamB.players.map(p => ({ ...p, team: 'B' })),
+    ...teamAPlayers.map(p => ({ ...p, team: 'A' })),
+    ...teamBPlayers.map(p => ({ ...p, team: 'B' })),
   ]
+
+  // Times que não estão nesta partida — candidatos a entrar como substitutos
+  const benchTeams = allTeams
+    .map((t, i) => ({ ...t, teamIndex: i }))
+    .filter(t => t.teamIndex !== teamAIndex && t.teamIndex !== teamBIndex)
+
+  function handleSubOutgoing(player, team) {
+    setSubOutgoing({ player, team })
+  }
+
+  function handleSubIncoming(incoming) {
+    if (!subOutgoing) return
+    const setPlayers = subOutgoing.team === 'A' ? setTeamAPlayers : setTeamBPlayers
+    setPlayers(prev => prev.map(p => (p && p.id === subOutgoing.player.id) ? incoming : p))
+    setSubModal(false)
+    setSubOutgoing(null)
+  }
 
   return (
     <div className="min-h-full bg-background flex flex-col">
@@ -374,10 +402,10 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatc
         </div>
 
         {/* Time A (esquerda) */}
-        <FieldSide players={match.teamA.players} color={colorA} side="left" />
+        <FieldSide players={teamAPlayers} color={colorA} side="left" />
 
         {/* Time B (direita) */}
-        <FieldSide players={match.teamB.players} color={colorB} side="right" />
+        <FieldSide players={teamBPlayers} color={colorB} side="right" />
       </div>
 
       {/* Eventos recentes */}
@@ -392,16 +420,26 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatc
       )}
 
       {/* Botões de ação */}
-      <div className="px-4 pb-6 flex gap-3 mt-auto">
-        <button
-          onClick={() => setGoalModal(true)}
-          className="flex-1 bg-card border border-border text-text-main font-bold py-4 rounded-2xl active:scale-95 transition-transform text-sm flex items-center justify-center gap-2"
-        >
-          ⚽ Registrar gol
-        </button>
+      <div className="px-4 pb-6 flex flex-col gap-2 mt-auto">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setGoalModal(true)}
+            className="flex-1 bg-card border border-border text-text-main font-bold py-4 rounded-2xl active:scale-95 transition-transform text-sm flex items-center justify-center gap-1.5"
+          >
+            ⚽ Gol
+          </button>
+          {benchTeams.length > 0 && (
+            <button
+              onClick={() => { setSubOutgoing(null); setSubModal(true) }}
+              className="flex-1 bg-card border border-border text-text-main font-bold py-4 rounded-2xl active:scale-95 transition-transform text-sm flex items-center justify-center gap-1.5"
+            >
+              🔄 Substituição
+            </button>
+          )}
+        </div>
         <button
           onClick={handleEndGame}
-          className="flex-1 bg-primary text-black font-bold py-4 rounded-2xl active:scale-95 transition-transform text-sm flex items-center justify-center gap-2"
+          className="w-full bg-primary text-black font-bold py-4 rounded-2xl active:scale-95 transition-transform text-sm flex items-center justify-center gap-2"
         >
           🏁 Finalizar jogo
         </button>
@@ -411,8 +449,8 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatc
       {goalModal && (
         <PlayerSelectModal
           title="Quem fez o gol?"
-          teamA={match.teamA}
-          teamB={match.teamB}
+          teamA={{ ...match.teamA, players: teamAPlayers }}
+          teamB={{ ...match.teamB, players: teamBPlayers }}
           colorA={colorA}
           colorB={colorB}
           onSelect={handleGoalSelect}
@@ -424,11 +462,43 @@ export default function MatchScreen({ match, teamAIndex, teamBIndex, isFirstMatc
       {assistModal && pendingGoal && (
         <AssistModal
           title="Teve assistência?"
-          players={match[pendingGoal.team === 'A' ? 'teamA' : 'teamB'].players}
+          players={pendingGoal.team === 'A' ? teamAPlayers : teamBPlayers}
           color={pendingGoal.team === 'A' ? colorA : colorB}
           scorer={pendingGoal.player}
           onSelect={handleAssistSelect}
         />
+      )}
+
+      {/* Modal: Substituição */}
+      {subModal && (
+        <BottomSheet
+          title={subOutgoing ? `Quem entra no lugar de ${subOutgoing.player.nome.split(' ')[0]}?` : 'Quem sai?'}
+          onClose={() => { setSubModal(false); setSubOutgoing(null) }}
+        >
+          {!subOutgoing ? (
+            <>
+              <TeamSection team={{ ...match.teamA, players: teamAPlayers }} color={colorA} onSelect={p => handleSubOutgoing(p, 'A')} />
+              <TeamSection team={{ ...match.teamB, players: teamBPlayers }} color={colorB} onSelect={p => handleSubOutgoing(p, 'B')} />
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setSubOutgoing(null)}
+                className="text-text-muted text-xs font-semibold mb-3"
+              >
+                ← Escolher outro jogador
+              </button>
+              {benchTeams.map(t => (
+                <TeamSection
+                  key={t.teamIndex}
+                  team={t}
+                  color={TEAM_COLORS[t.teamIndex % TEAM_COLORS.length]}
+                  onSelect={handleSubIncoming}
+                />
+              ))}
+            </>
+          )}
+        </BottomSheet>
       )}
 
       {/* Aviso: troca automática após empate */}
