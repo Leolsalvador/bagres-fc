@@ -77,19 +77,20 @@ export default function FeedPost() {
         </button>
       </div>
 
-      {/* Post preview — foto bem visível + legenda completa */}
+      {/* Post preview — foto bem visível + legenda; a caixa toda tem altura
+          máxima fixa (com scroll interno) pra nunca empurrar os comentários
+          e a caixa de digitar pra fora da tela, mesmo com legenda longa */}
       {post && (
-        <div className="flex-shrink-0 mx-4 mb-3 bg-card rounded-2xl overflow-hidden">
+        <div className="flex-shrink-0 mx-4 mb-3 bg-card rounded-2xl overflow-hidden overflow-y-auto" style={{ maxHeight: '42vh' }}>
           <button
             onClick={() => setShowImage(true)}
             className="w-full flex items-center justify-center bg-background active:opacity-90 transition-opacity"
-            style={{ maxHeight: '38vh' }}
           >
             <img
               src={post.imagem_url}
               alt={post.legenda ?? 'Post'}
               className="w-full object-contain"
-              style={{ maxHeight: '38vh' }}
+              style={{ maxHeight: '28vh' }}
             />
           </button>
           <div className="p-3">
