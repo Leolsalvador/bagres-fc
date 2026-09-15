@@ -6,7 +6,8 @@ language plpgsql
 security definer
 as $$
 begin
-  delete from public.votos;
+  -- Supabase bloqueia DELETE/UPDATE sem WHERE (proteção contra apagar tabela inteira sem querer)
+  delete from public.votos where true;
   update public.profiles set rating = 0 where status = 'aprovado';
 end;
 $$;
