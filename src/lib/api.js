@@ -1,6 +1,7 @@
 // src/lib/api.js — Todas as queries do Supabase
 import { supabase } from './supabase'
 import { uploadToR2 } from './r2'
+import { generateTeamFieldImage } from './teamFieldImage'
 import {
   USE_MOCK, mockMatchHistory,
   mockCurrentUser, mockPlayers, mockRodada, mockPresencas,
@@ -322,7 +323,7 @@ export async function fetchMatchHistory(rodadaId) {
 }
 
 // ─── FINALIZAÇÃO DA RODADA ──────────────────────────────────
-export async function finalizeRodada(rodadaId, matchHistory, presencas, autorId) {
+export async function finalizeRodada(rodadaId, matchHistory, presencas, autorId, teams) {
   if (USE_MOCK) return
   // Computa artilheiro e garçom
   const allEvents = matchHistory.flatMap(m => m.events ?? [])
@@ -335,6 +336,21 @@ export async function finalizeRodada(rodadaId, matchHistory, presencas, autorId)
   })
   const artilheiro = Object.values(goalMap).sort((a, b) => b.count - a.count)[0]
   const garcom     = Object.values(assistMap).sort((a, b) => b.count - a.count)[0]
+
+  // Time da Rodada (mais vitórias; desempate: saldo de gols) — mesmo cálculo do resumo do admin
+  const teamMap = {}
+  matchHistory.forEach(m => {
+    const tA = m.teamA.nome, tB = m.teamB.nome
+    if (!teamMap[tA]) teamMap[tA] = { nome: tA, vitorias: 0, saldo: 0 }
+    if (!teamMap[tB]) teamMap[tB] = { nome: tB, vitorias: 0, saldo: 0 }
+    teamMap[tA].saldo += (m.goalsA - m.goalsB)
+    teamMap[tB].saldo += (m.goalsB - m.goalsA)
+    if (m.winner === 'A') teamMap[tA].vitorias++
+    else if (m.winner === 'B') teamMap[tB].vitorias++
+  })
+  const timeDaRodada = Object.values(teamMap).sort((a, b) => b.vitorias - a.vitorias || b.saldo - a.saldo)[0]
+  const winnerTeam = timeDaRodada ? teams?.find(t => t.nome === timeDaRodada.nome) : null
+  const winnerColorIndex = timeDaRodada ? (teams?.findIndex(t => t.nome === timeDaRodada.nome) ?? 0) : 0
 
   await updateRodadaStatus(rodadaId, 'encerrada', {
     artilheiro_id: artilheiro?.id ?? null,
@@ -357,13 +373,13 @@ export async function finalizeRodada(rodadaId, matchHistory, presencas, autorId)
   // Posta os destaques da rodada no feed automaticamente — melhor esforço,
   // nunca deve derrubar a finalização da rodada se algo der errado aqui
   try {
-    await postDestaquesRodada(autorId, artilheiro, garcom)
+    await postDestaquesRodada(rodadaId, autorId, artilheiro, garcom, winnerTeam, winnerColorIndex, timeDaRodada?.vitorias)
   } catch (err) {
     console.error('Erro ao postar destaques da rodada no feed:', err)
   }
 }
 
-// ─── FEED — destaques automáticos da rodada (artilheiro/garçom) ─
+// ─── FEED — destaques automáticos da rodada (artilheiro/garçom/time) ─
 function legendaArtilheiro(nome) {
   return `⚽👑 Artilheiro da rodada: ${nome}!\nBalançou a rede tanto que o goleiro já pediu pra sair mais cedo. Aplausos pro matador! 🔥`
 }
@@ -372,7 +388,11 @@ function legendaGarcom(nome) {
   return `🅰️🍽️ Garçom da rodada: ${nome}!\nServiu mais assistência que rodízio em dia de fome. Os atacantes agradecem — o goleiro nem tanto 👏`
 }
 
-async function postDestaquesRodada(autorId, artilheiro, garcom) {
+function legendaTimeDaRodada(nome, vitorias) {
+  return `🏆⚡ Time da Rodada: ${nome}!\n${vitorias} vitória${vitorias !== 1 ? 's' : ''} nessa semana — os outros times já tão marcando treino extra pra próxima. Bota na moldura! 🖼️`
+}
+
+async function postDestaquesRodada(rodadaId, autorId, artilheiro, garcom, winnerTeam, winnerColorIndex, vitorias) {
   if (!autorId) return
   const posts = []
   if (artilheiro?.profile?.foto_url) {
@@ -381,6 +401,20 @@ async function postDestaquesRodada(autorId, artilheiro, garcom) {
   if (garcom?.profile?.foto_url) {
     posts.push({ autor_id: autorId, legenda: legendaGarcom(garcom.profile.nome), imagem_url: garcom.profile.foto_url })
   }
+
+  if (winnerTeam && vitorias > 0) {
+    try {
+      const blob = await generateTeamFieldImage(winnerTeam, winnerColorIndex, vitorias)
+      if (blob) {
+        const key = `feed/auto/${rodadaId}-time-da-rodada-${Date.now()}.png`
+        const imageUrl = await uploadToR2(key, blob)
+        posts.push({ autor_id: autorId, legenda: legendaTimeDaRodada(winnerTeam.nome, vitorias), imagem_url: imageUrl })
+      }
+    } catch (err) {
+      console.error('Erro ao gerar imagem do time da rodada:', err)
+    }
+  }
+
   if (posts.length === 0) return
   const { error } = await supabase.from('feed_posts').insert(posts)
   if (error) throw error

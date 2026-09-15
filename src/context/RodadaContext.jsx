@@ -112,7 +112,7 @@ export function RodadaProvider({ children }) {
     }
     try {
       if (status === 'encerrada') {
-        await finalizeRodada(rodada.id, matchHistory, presencas, profile?.id)
+        await finalizeRodada(rodada.id, matchHistory, presencas, profile?.id, teams)
       } else {
         await updateRodadaStatus(rodada.id, status)
       }
