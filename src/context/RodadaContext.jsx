@@ -9,11 +9,13 @@ import {
 } from '@/lib/api'
 import { drawTeams } from '@/lib/teamDraw'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
 import { USE_MOCK, mockPresencas } from '@/lib/mockData'
 
 const RodadaContext = createContext(null)
 
 export function RodadaProvider({ children }) {
+  const { profile } = useAuth()
   const [rodada, setRodada]             = useState(null)
   const [presencas, setPresencas]       = useState([])
   const [teams, setTeams]               = useState(null)
@@ -110,7 +112,7 @@ export function RodadaProvider({ children }) {
     }
     try {
       if (status === 'encerrada') {
-        await finalizeRodada(rodada.id, matchHistory, presencas)
+        await finalizeRodada(rodada.id, matchHistory, presencas, profile?.id)
       } else {
         await updateRodadaStatus(rodada.id, status)
       }

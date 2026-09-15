@@ -322,7 +322,7 @@ export async function fetchMatchHistory(rodadaId) {
 }
 
 // ─── FINALIZAÇÃO DA RODADA ──────────────────────────────────
-export async function finalizeRodada(rodadaId, matchHistory, presencas) {
+export async function finalizeRodada(rodadaId, matchHistory, presencas, autorId) {
   if (USE_MOCK) return
   // Computa artilheiro e garçom
   const allEvents = matchHistory.flatMap(m => m.events ?? [])
@@ -330,8 +330,8 @@ export async function finalizeRodada(rodadaId, matchHistory, presencas) {
   allEvents.forEach(ev => {
     const key = ev.player?.id
     if (!key) return
-    if (ev.type === 'gol') goalMap[key] = { id: key, count: (goalMap[key]?.count ?? 0) + 1 }
-    else assistMap[key] = { id: key, count: (assistMap[key]?.count ?? 0) + 1 }
+    if (ev.type === 'gol') goalMap[key] = { id: key, profile: ev.player, count: (goalMap[key]?.count ?? 0) + 1 }
+    else assistMap[key] = { id: key, profile: ev.player, count: (assistMap[key]?.count ?? 0) + 1 }
   })
   const artilheiro = Object.values(goalMap).sort((a, b) => b.count - a.count)[0]
   const garcom     = Object.values(assistMap).sort((a, b) => b.count - a.count)[0]
@@ -353,6 +353,37 @@ export async function finalizeRodada(rodadaId, matchHistory, presencas) {
       })
     )
   )
+
+  // Posta os destaques da rodada no feed automaticamente — melhor esforço,
+  // nunca deve derrubar a finalização da rodada se algo der errado aqui
+  try {
+    await postDestaquesRodada(autorId, artilheiro, garcom)
+  } catch (err) {
+    console.error('Erro ao postar destaques da rodada no feed:', err)
+  }
+}
+
+// ─── FEED — destaques automáticos da rodada (artilheiro/garçom) ─
+function legendaArtilheiro(nome) {
+  return `⚽👑 Artilheiro da rodada: ${nome}!\nBalançou a rede tanto que o goleiro já pediu pra sair mais cedo. Aplausos pro matador! 🔥`
+}
+
+function legendaGarcom(nome) {
+  return `🅰️🍽️ Garçom da rodada: ${nome}!\nServiu mais assistência que rodízio em dia de fome. Os atacantes agradecem — o goleiro nem tanto 👏`
+}
+
+async function postDestaquesRodada(autorId, artilheiro, garcom) {
+  if (!autorId) return
+  const posts = []
+  if (artilheiro?.profile?.foto_url) {
+    posts.push({ autor_id: autorId, legenda: legendaArtilheiro(artilheiro.profile.nome), imagem_url: artilheiro.profile.foto_url })
+  }
+  if (garcom?.profile?.foto_url) {
+    posts.push({ autor_id: autorId, legenda: legendaGarcom(garcom.profile.nome), imagem_url: garcom.profile.foto_url })
+  }
+  if (posts.length === 0) return
+  const { error } = await supabase.from('feed_posts').insert(posts)
+  if (error) throw error
 }
 
 // ─── VOTAÇÃO ────────────────────────────────────────────────
