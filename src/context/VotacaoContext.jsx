@@ -34,6 +34,13 @@ export function VotacaoProvider({ children }) {
 
   async function reabrirVotacao() {
     try {
+      // Apaga os votos de todos os ciclos anteriores e zera o rating de todo mundo
+      await clearAllVotosAndRatings()
+      supabase.channel('home-profiles').send({
+        type: 'broadcast',
+        event: 'ratings-reset',
+      }).catch(() => {})
+
       const novo = await createCiclo()
       setCiclo(novo)
       setVotacaoAbertaState(true)

@@ -92,6 +92,11 @@ export default function Votacao() {
     setIndex(i => i + 1)
   }
 
+  function handleReabrir() {
+    if (!window.confirm('Reabrir a votação vai apagar todos os votos anteriores e zerar o rating de todo mundo. Confirmar?')) return
+    reabrirVotacao()
+  }
+
   async function handleVotarAdmin() {
     setClearingAdmin(true)
     try {
@@ -205,7 +210,7 @@ export default function Votacao() {
       <div className="min-h-full bg-background">
         <div className="px-4 pt-10 pb-4">
           <h1 className="text-2xl font-black text-text-main uppercase tracking-widest">Votação</h1>
-          {isAdmin && <AdminReabrirButton onReabrir={reabrirVotacao} />}
+          {isAdmin && <AdminReabrirButton onReabrir={handleReabrir} />}
         </div>
 
         {/* Card admin — sempre no topo para admins */}
@@ -267,7 +272,7 @@ export default function Votacao() {
         <div className="px-4 pt-10 pb-4">
           <h1 className="text-2xl font-black text-text-main uppercase tracking-widest">Votação</h1>
           <p className="text-text-muted text-sm mt-0.5">Avalie seus colegas</p>
-          {isAdmin && <AdminReabrirButton onReabrir={reabrirVotacao} />}
+          {isAdmin && <AdminReabrirButton onReabrir={handleReabrir} />}
         </div>
         {isAdmin && (
           <div className="px-4 space-y-2">
@@ -298,7 +303,7 @@ export default function Votacao() {
         <p className="text-text-muted text-sm mt-0.5">
           {index + 1} de {players.length} jogadores
         </p>
-        {isAdmin && <AdminReabrirButton onReabrir={reabrirVotacao} />}
+        {isAdmin && <AdminReabrirButton onReabrir={handleReabrir} />}
       </div>
 
       {/* Card admin — sempre no topo para admins */}
