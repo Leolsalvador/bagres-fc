@@ -77,25 +77,26 @@ export default function FeedPost() {
         </button>
       </div>
 
-      {/* Post preview — miniatura clicável + legenda compacta */}
+      {/* Post preview — foto bem visível + legenda completa */}
       {post && (
-        <div className="flex-shrink-0 mx-4 mb-3 flex items-center gap-3 bg-card rounded-2xl p-3">
+        <div className="flex-shrink-0 mx-4 mb-3 bg-card rounded-2xl overflow-hidden">
           <button
             onClick={() => setShowImage(true)}
-            className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-background active:scale-95 transition-transform"
+            className="w-full flex items-center justify-center bg-background active:opacity-90 transition-opacity"
+            style={{ maxHeight: '38vh' }}
           >
             <img
               src={post.imagem_url}
               alt={post.legenda ?? 'Post'}
-              className="w-full h-full object-cover"
+              className="w-full object-contain"
+              style={{ maxHeight: '38vh' }}
             />
           </button>
-          <div className="flex-1 min-w-0">
-            <p className="text-text-main text-xs font-semibold truncate">{post.profiles?.nome}</p>
-            {post.legenda
-              ? <p className="text-text-muted text-xs mt-0.5 line-clamp-2 leading-relaxed">{post.legenda}</p>
-              : <p className="text-text-muted text-xs mt-0.5 italic">Sem legenda</p>
-            }
+          <div className="p-3">
+            <p className="text-text-main text-xs font-semibold">{post.profiles?.nome}</p>
+            {post.legenda && (
+              <p className="text-text-muted text-xs mt-1 leading-relaxed whitespace-pre-wrap">{post.legenda}</p>
+            )}
           </div>
         </div>
       )}
