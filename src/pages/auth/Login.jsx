@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { Eye, EyeOff } from 'lucide-react'
 
@@ -14,13 +14,19 @@ export default function Login() {
 
   const { signIn, signUp, signInWithGoogle, user, profile, loading: authLoading } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // Rota que a pessoa tentava acessar antes de cair no login (ex: link de post compartilhado)
+  const destino = location.state?.from
+    ? location.state.from.pathname + location.state.from.search
+    : '/home'
 
   useEffect(() => {
     if (authLoading) return
     if (!user) return
-    if (profile?.status === 'aprovado') navigate('/home', { replace: true })
+    if (profile?.status === 'aprovado') navigate(destino, { replace: true })
     else if (profile?.status === 'pendente') navigate('/aguardando', { replace: true })
-  }, [user, profile, authLoading, navigate])
+  }, [user, profile, authLoading, navigate]) // eslint-disable-line
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -34,7 +40,7 @@ export default function Login() {
     } else {
       const { error } = await signIn(email, password)
       if (error) setError('Email ou senha inválidos')
-      else navigate('/home')
+      else navigate(destino)
     }
     setLoading(false)
   }

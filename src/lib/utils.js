@@ -25,3 +25,20 @@ export function eventPlayerKey(e) {
   if (!e) return null
   return e.is_guest ? `g:${e.guest_time_jogador_id}` : e.jogador_id
 }
+
+// Compartilha um link — usa o share sheet nativo (inclui WhatsApp) quando disponível,
+// senão abre o WhatsApp direto com o link preenchido.
+export async function shareLink({ url, title, text }) {
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, text, url })
+      return true
+    } catch (err) {
+      if (err?.name === 'AbortError') return false // usuário cancelou o share sheet
+      // Falhou por outro motivo — cai no fallback do WhatsApp abaixo
+    }
+  }
+  const msg = text ? `${text} ${url}` : url
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener')
+  return true
+}

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Send } from 'lucide-react'
+import { ArrowLeft, Send, Share2 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchFeedPost, fetchFeedComentarios, createFeedComentario } from '@/lib/api'
+import { shareLink } from '@/lib/utils'
 
 function timeAgo(dateStr) {
   const diff = (Date.now() - new Date(dateStr).getTime()) / 1000
@@ -54,6 +55,14 @@ export default function FeedPost() {
     }
   }
 
+  function handleShare() {
+    shareLink({
+      url: `${window.location.origin}/feed/${postId}`,
+      title: 'Bagres FC',
+      text: post?.legenda ? `${post.profiles?.nome ?? ''}: ${post.legenda}` : `Foto de ${post?.profiles?.nome ?? 'um jogador'} no Bagres FC`,
+    }).catch(console.error)
+  }
+
   return (
     <div className="flex flex-col bg-background" style={{ height: 'calc(100dvh - 64px)' }}>
       {/* Header */}
@@ -61,7 +70,10 @@ export default function FeedPost() {
         <button onClick={() => navigate(-1)} className="text-text-muted active:scale-90 transition-transform">
           <ArrowLeft size={22} />
         </button>
-        <h1 className="text-lg font-bold text-text-main">Comentários</h1>
+        <h1 className="text-lg font-bold text-text-main flex-1">Comentários</h1>
+        <button onClick={handleShare} className="text-text-muted active:scale-90 transition-transform">
+          <Share2 size={19} />
+        </button>
       </div>
 
       {/* Post preview — compact thumbnail row */}

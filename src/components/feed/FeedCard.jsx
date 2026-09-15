@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { MessageCircle, Trash2, X } from 'lucide-react'
+import { MessageCircle, Share2, Trash2, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { deleteFeedPost, toggleReaction } from '@/lib/api'
+import { shareLink } from '@/lib/utils'
 
 const EMOJIS = ['❤️', '👍', '😂', '🔥', '😮', '👏', '🍆']
 
@@ -123,6 +124,14 @@ export default function FeedCard({ post, isAdmin, userId, onDeleted }) {
     }
   }
 
+  function handleShare() {
+    shareLink({
+      url: `${window.location.origin}/feed/${post.id}`,
+      title: 'Bagres FC',
+      text: post.legenda ? `${post.profiles?.nome ?? ''}: ${post.legenda}` : `Foto de ${post.profiles?.nome ?? 'um jogador'} no Bagres FC`,
+    }).catch(console.error)
+  }
+
   return (
     <div className="bg-card rounded-2xl overflow-hidden">
       {/* Header */}
@@ -229,6 +238,13 @@ export default function FeedCard({ post, isAdmin, userId, onDeleted }) {
                 ? `${commentCount} comentário${commentCount !== 1 ? 's' : ''}`
                 : 'Comentar'}
             </span>
+          </button>
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-1.5 text-text-muted text-sm active:scale-95 transition-transform ml-auto"
+          >
+            <Share2 size={16} />
+            <span>Compartilhar</span>
           </button>
         </div>
       </div>
