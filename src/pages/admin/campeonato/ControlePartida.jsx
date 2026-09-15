@@ -192,13 +192,20 @@ function PartidaControle({ partida: initialPartida, jogadores, times, eventosIni
   const [timeExpired, setTimeExpired] = useState(false)
   const [localEventos, setLocalEventos] = useState(
     (eventosIniciais ?? []).map(ev => ({
+      id: ev.id,
       tipo: ev.tipo,
-      nome: ev.profiles?.nome ?? ev.nome,
+      nome: ev.profiles?.nome ?? ev.guest_nome ?? ev.nome,
       minuto: ev.minuto,
+      timeId: ev.time_id,
+      jogadorId: ev.jogador_id ?? null,
+      isGuest: ev.is_guest ?? false,
+      guestNome: ev.guest_nome ?? null,
+      guestTimeJogadorId: ev.guest_time_jogador_id ?? null,
     }))
   )
   const [showGolModal, setShowGolModal] = useState(false)
   const [showCartaoModal, setShowCartaoModal] = useState(false)
+  const [editingEvento, setEditingEvento] = useState(null)
   const endTimeRef = useRef(null)
   const intervalRef = useRef(null)
 
@@ -393,18 +400,31 @@ function PartidaControle({ partida: initialPartida, jogadores, times, eventosIni
     const evs = [montarEvento(scorer, timeId, 'gol', minuto, faseNum)]
     if (assistente) evs.push(montarEvento(assistente, timeId, 'assistencia', minuto, faseNum))
 
+    let inserted = []
     if (!USE_MOCK) {
-      await Promise.all([
+      const [, insertRes] = await Promise.all([
         supabase.from('campeonato_partidas').update({ [campo]: novoGol }).eq('id', partida.id),
-        supabase.from('campeonato_eventos').insert(evs),
+        supabase.from('campeonato_eventos').insert(evs).select(),
       ])
+      inserted = insertRes.data ?? []
     }
     setPartida(p => ({ ...p, [campo]: novoGol }))
 
+    function toLocalEvento(jogador, tipo, idx) {
+      return {
+        id: inserted[idx]?.id ?? null,
+        tipo, nome: jogador.nome, minuto, timeId,
+        jogadorId: jogador.is_guest ? null : jogador.id,
+        isGuest: !!jogador.is_guest,
+        guestNome: jogador.is_guest ? jogador.nome : null,
+        guestTimeJogadorId: jogador.is_guest ? jogador.tj_id : null,
+      }
+    }
+
     setLocalEventos(ev => [
       ...ev,
-      { tipo: 'gol', nome: scorer.nome, minuto },
-      ...(assistente ? [{ tipo: 'assistencia', nome: assistente.nome, minuto }] : []),
+      toLocalEvento(scorer, 'gol', 0),
+      ...(assistente ? [toLocalEvento(assistente, 'assistencia', 1)] : []),
     ])
     setShowGolModal(false)
   }
@@ -412,11 +432,72 @@ function PartidaControle({ partida: initialPartida, jogadores, times, eventosIni
   async function handleAddCartao(jogador, timeId, tipo) {
     const minuto = getMinuto()
     const faseNum = fase !== 'i' ? fase : null
+    let insertedId = null
     if (!USE_MOCK) {
-      await supabase.from('campeonato_eventos').insert(montarEvento(jogador, timeId, tipo, minuto, faseNum))
+      const { data } = await supabase.from('campeonato_eventos').insert(montarEvento(jogador, timeId, tipo, minuto, faseNum)).select().single()
+      insertedId = data?.id ?? null
     }
-    setLocalEventos(ev => [...ev, { tipo, nome: jogador.nome, minuto }])
+    setLocalEventos(ev => [...ev, {
+      id: insertedId, tipo, nome: jogador.nome, minuto, timeId,
+      jogadorId: jogador.is_guest ? null : jogador.id,
+      isGuest: !!jogador.is_guest,
+      guestNome: jogador.is_guest ? jogador.nome : null,
+      guestTimeJogadorId: jogador.is_guest ? jogador.tj_id : null,
+    }])
     setShowCartaoModal(false)
+  }
+
+  async function handleReassignEvento(newJogador, newTimeId) {
+    if (!editingEvento) return
+    const ev = editingEvento
+
+    if (ev.tipo === 'gol' && ev.timeId !== newTimeId) {
+      const wasCasa = ev.timeId === partida.time_casa_id
+      const isCasaNovo = newTimeId === partida.time_casa_id
+      const golsCasa = Math.max(0, partida.gols_casa + (wasCasa ? -1 : 0) + (isCasaNovo ? 1 : 0))
+      const golsVisitante = Math.max(0, partida.gols_visitante + (!wasCasa ? -1 : 0) + (!isCasaNovo ? 1 : 0))
+      if (!USE_MOCK) await supabase.from('campeonato_partidas').update({ gols_casa: golsCasa, gols_visitante: golsVisitante }).eq('id', partida.id)
+      setPartida(p => ({ ...p, gols_casa: golsCasa, gols_visitante: golsVisitante }))
+    }
+
+    const patch = newJogador.is_guest
+      ? { time_id: newTimeId, jogador_id: null, is_guest: true, guest_nome: newJogador.nome, guest_time_jogador_id: newJogador.tj_id }
+      : { time_id: newTimeId, jogador_id: newJogador.id, is_guest: false, guest_nome: null, guest_time_jogador_id: null }
+
+    if (!USE_MOCK && ev.id) {
+      await supabase.from('campeonato_eventos').update(patch).eq('id', ev.id)
+    }
+
+    setLocalEventos(evs => evs.map(e => e === ev ? {
+      ...e,
+      nome: newJogador.nome,
+      timeId: newTimeId,
+      jogadorId: newJogador.is_guest ? null : newJogador.id,
+      isGuest: !!newJogador.is_guest,
+      guestNome: newJogador.is_guest ? newJogador.nome : null,
+      guestTimeJogadorId: newJogador.is_guest ? newJogador.tj_id : null,
+    } : e))
+    setEditingEvento(null)
+  }
+
+  async function handleRemoveEvento() {
+    if (!editingEvento) return
+    const ev = editingEvento
+
+    if (ev.tipo === 'gol') {
+      const isCasa = ev.timeId === partida.time_casa_id
+      const campo = isCasa ? 'gols_casa' : 'gols_visitante'
+      const novoValor = Math.max(0, (isCasa ? partida.gols_casa : partida.gols_visitante) - 1)
+      if (!USE_MOCK) await supabase.from('campeonato_partidas').update({ [campo]: novoValor }).eq('id', partida.id)
+      setPartida(p => ({ ...p, [campo]: novoValor }))
+    }
+
+    if (!USE_MOCK && ev.id) {
+      await supabase.from('campeonato_eventos').delete().eq('id', ev.id)
+    }
+
+    setLocalEventos(evs => evs.filter(e => e !== ev))
+    setEditingEvento(null)
   }
 
   const fasePlaying = fase === 1 || fase === 2
@@ -584,7 +665,11 @@ function PartidaControle({ partida: initialPartida, jogadores, times, eventosIni
           <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1.5">Eventos</p>
           <div className="bg-card rounded-xl divide-y divide-border/40">
             {[...localEventos].reverse().map((ev, i) => (
-              <div key={i} className="flex items-center gap-3 px-3 py-2">
+              <button
+                key={ev.id ?? i}
+                onClick={() => setEditingEvento(ev)}
+                className="w-full flex items-center gap-3 px-3 py-2 active:bg-elevated transition-colors text-left"
+              >
                 <span className="text-base shrink-0">
                   {ev.tipo === 'gol' ? '⚽' : ev.tipo === 'assistencia' ? '🅰️' : ev.tipo === 'cartao_amarelo' ? '🟨' : '🟥'}
                 </span>
@@ -592,7 +677,7 @@ function PartidaControle({ partida: initialPartida, jogadores, times, eventosIni
                 {ev.minuto != null && (
                   <span className="text-xs text-text-muted shrink-0">{ev.minuto}'</span>
                 )}
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -624,6 +709,26 @@ function PartidaControle({ partida: initialPartida, jogadores, times, eventosIni
           onConfirm={handleAddCartao}
           onClose={() => setShowCartaoModal(false)}
         />
+      )}
+
+      {/* Modal: Editar/remover evento */}
+      {editingEvento && (
+        <BottomSheet
+          title={`Editar ${editingEvento.tipo === 'gol' ? 'gol' : editingEvento.tipo === 'assistencia' ? 'assistência' : 'cartão'}`}
+          onClose={() => setEditingEvento(null)}
+        >
+          <p className="text-text-muted text-xs mb-3">
+            Registrado: {editingEvento.nome}{editingEvento.minuto != null ? ` (${editingEvento.minuto}')` : ''}
+          </p>
+          <TimeSection time={timeCasa} jogadores={jogadoresCasa} onSelect={j => handleReassignEvento(j, partida.time_casa_id)} />
+          <TimeSection time={timeVisitante} jogadores={jogadoresVisitante} onSelect={j => handleReassignEvento(j, partida.time_visitante_id)} />
+          <button
+            onClick={handleRemoveEvento}
+            className="w-full mt-2 py-3 rounded-xl bg-danger/10 text-danger text-sm font-semibold active:scale-95 transition-transform"
+          >
+            Remover evento
+          </button>
+        </BottomSheet>
       )}
     </div>
   )
