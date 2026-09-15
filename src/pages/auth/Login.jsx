@@ -5,6 +5,8 @@ import { Eye, EyeOff } from 'lucide-react'
 
 export default function Login() {
   const [isRegistering, setIsRegistering] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
   const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -12,7 +14,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const { signIn, signUp, signInWithGoogle, user, profile, loading: authLoading } = useAuth()
+  const { signIn, signUp, signInWithGoogle, resetPassword, user, profile, loading: authLoading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -45,6 +47,16 @@ export default function Login() {
     setLoading(false)
   }
 
+  async function handleReset(e) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    const { error } = await resetPassword(email)
+    if (error) setError(error.message)
+    else setResetSent(true)
+    setLoading(false)
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
       {/* Logo */}
@@ -55,6 +67,62 @@ export default function Login() {
 
       {/* Card */}
       <div className="w-full max-w-sm bg-card rounded-2xl p-6 space-y-4 shadow-xl">
+        {isResetting ? (
+          <>
+            <h2 className="text-text-main font-bold text-xl text-center">Recuperar senha</h2>
+
+            {resetSent ? (
+              <div className="space-y-4 text-center">
+                <p className="text-text-muted text-sm">
+                  Enviamos um link pra <span className="text-text-main font-semibold">{email}</span>.
+                  Abra o email e siga o link pra criar uma senha nova.
+                </p>
+                <button
+                  onClick={() => { setIsResetting(false); setResetSent(false); setError('') }}
+                  className="text-primary font-semibold text-sm"
+                >
+                  Voltar pro login
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleReset} className="space-y-3">
+                <p className="text-text-muted text-sm text-center">
+                  Digite seu email — vamos te mandar um link pra criar uma senha nova.
+                </p>
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                  className="w-full bg-input text-text-main placeholder-text-muted rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary text-base"
+                />
+
+                {error && (
+                  <p className="text-danger text-sm text-center bg-danger/10 py-2 px-3 rounded-lg">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-primary text-black font-bold py-3 rounded-xl disabled:opacity-50 active:scale-95 transition-transform text-base mt-1"
+                >
+                  {loading ? 'Enviando...' : 'Enviar link de recuperação'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setIsResetting(false); setError('') }}
+                  className="w-full text-text-muted text-sm text-center"
+                >
+                  Cancelar
+                </button>
+              </form>
+            )}
+          </>
+        ) : (
+        <>
         <h2 className="text-text-main font-bold text-xl text-center">
           {isRegistering ? 'Criar conta' : 'Entrar'}
         </h2>
@@ -97,6 +165,18 @@ export default function Login() {
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
+
+          {!isRegistering && (
+            <div className="text-right -mt-1">
+              <button
+                type="button"
+                onClick={() => { setIsResetting(true); setError('') }}
+                className="text-primary text-xs font-semibold"
+              >
+                Esqueceu a senha?
+              </button>
+            </div>
+          )}
 
           {error && (
             <p className="text-danger text-sm text-center bg-danger/10 py-2 px-3 rounded-lg">
@@ -141,6 +221,8 @@ export default function Login() {
             {isRegistering ? 'Entrar' : 'Criar conta'}
           </button>
         </p>
+        </>
+        )}
       </div>
     </div>
   )

@@ -8,6 +8,7 @@ import Layout from '@/components/layout/Layout'
 import InstallPWA from '@/components/InstallPWA'
 
 import Login from '@/pages/auth/Login'
+import ResetPassword from '@/pages/auth/ResetPassword'
 import PendingApproval from '@/pages/PendingApproval'
 import Home from '@/pages/Home'
 import Rodada from '@/pages/Rodada'
@@ -34,6 +35,7 @@ export default function App() {
         <Routes>
           {/* Públicas */}
           <Route path="/login" element={<Login />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/aguardando" element={<PendingApproval />} />
 
           {/* Protegidas */}

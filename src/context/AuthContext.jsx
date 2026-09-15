@@ -119,6 +119,16 @@ export function AuthProvider({ children }) {
     })
   }
 
+  async function resetPassword(email) {
+    return supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+  }
+
+  async function updatePassword(newPassword) {
+    return supabase.auth.updateUser({ password: newPassword })
+  }
+
   async function signOut() {
     await supabase.auth.signOut()
     setUser(null)
@@ -134,7 +144,7 @@ export function AuthProvider({ children }) {
   const isJogador      = profile?.papel === 'usuario'
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signInWithGoogle, signUp, signOut, refreshProfile, isAdmin, isTelespectador, isJogador }}>
+    <AuthContext.Provider value={{ user, profile, loading, signIn, signInWithGoogle, signUp, signOut, resetPassword, updatePassword, refreshProfile, isAdmin, isTelespectador, isJogador }}>
       {children}
     </AuthContext.Provider>
   )
