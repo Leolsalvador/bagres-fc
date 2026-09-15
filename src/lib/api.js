@@ -2,6 +2,7 @@
 import { supabase } from './supabase'
 import { uploadToR2, deleteFromR2 } from './r2'
 import { generateTeamFieldImage } from './teamFieldImage'
+import { generateMatchStoryImage } from './matchStoryImage'
 import {
   USE_MOCK, mockMatchHistory,
   mockCurrentUser, mockPlayers, mockRodada, mockPresencas,
@@ -760,4 +761,18 @@ export async function cleanupExpiredStories() {
     }
   }))
   await supabase.from('stories').delete().in('id', data.map(s => s.id))
+}
+
+// Story automático simples (só texto/placar) postado sempre que uma partida termina —
+// funciona tanto pra partida da pelada semanal quanto pra partida do campeonato.
+export async function postMatchStory({ autorId, teamA, teamB, golsA, golsB, scorerNames, assisterNames }) {
+  if (USE_MOCK || !autorId) return
+  const blob = await generateMatchStoryImage({ teamA, teamB, golsA, golsB, scorerNames, assisterNames })
+  if (!blob) return
+  const key = `stories/auto/${Date.now()}.png`
+  const imageUrl = await uploadToR2(key, blob)
+  const { error } = await supabase
+    .from('stories')
+    .insert({ autor_id: autorId, imagem_url: imageUrl, r2_key: key })
+  if (error) throw error
 }

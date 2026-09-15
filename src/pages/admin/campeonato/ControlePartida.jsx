@@ -4,7 +4,9 @@ import { cn, teamDotStyle, playerKey } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useCampeonato } from '@/context/CampeonatoContext'
+import { useAuth } from '@/hooks/useAuth'
 import { USE_MOCK } from '@/lib/mockData'
+import { postMatchStory } from '@/lib/api'
 
 const DURACAO = { 1: 5 * 60, i: 1 * 60, 2: 5 * 60 }
 
@@ -182,6 +184,7 @@ function PartidaAoVivoCard({ partida: p, times, onPress }) {
 // ── Full match control (admin field screen) ───────────────────
 function PartidaControle({ partida: initialPartida, jogadores, times, eventosIniciais, onBack, onRefresh, updatePartidaLocal }) {
   const navigate = useNavigate()
+  const { profile } = useAuth()
   const [partida, setPartida] = useState(initialPartida)
   const [fase, setFase] = useState(initialPartida.half_atual || 0)
   const [seconds, setSeconds] = useState(null)
@@ -352,6 +355,18 @@ function PartidaControle({ partida: initialPartida, jogadores, times, eventosIni
     else updatePartidaLocal(partida.id, updates)
     setPartida(p => ({ ...p, ...updates }))
     onRefresh()
+
+    // Story automático com o placar e os gols/assistências — melhor esforço
+    postMatchStory({
+      autorId: profile?.id,
+      teamA: timeCasa?.nome ?? '—',
+      teamB: timeVisitante?.nome ?? '—',
+      golsA: partida.gols_casa,
+      golsB: partida.gols_visitante,
+      scorerNames: localEventos.filter(e => e.tipo === 'gol').map(e => e.nome ?? 'Convidado'),
+      assisterNames: localEventos.filter(e => e.tipo === 'assistencia').map(e => e.nome ?? 'Convidado'),
+    }).catch(err => console.error('Erro ao postar story da partida:', err))
+
     navigate(`/campeonato/partida/${partida.id}`)
   }
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Camera, Image as ImageIcon, X } from 'lucide-react'
 import imageCompression from 'browser-image-compression'
 import { fetchActiveStories, createStory, cleanupExpiredStories } from '@/lib/api'
 import StoryViewer from './StoryViewer'
@@ -8,7 +8,9 @@ export default function StoriesBar({ userId }) {
   const [stories, setStories] = useState([])
   const [uploading, setUploading] = useState(false)
   const [viewerGroupIndex, setViewerGroupIndex] = useState(null)
-  const fileRef = useRef(null)
+  const [showPicker, setShowPicker] = useState(false)
+  const cameraRef = useRef(null)
+  const galleryRef = useRef(null)
 
   useEffect(() => {
     load()
@@ -66,12 +68,16 @@ export default function StoriesBar({ userId }) {
     }
   }
 
+  function openPicker() {
+    setShowPicker(true)
+  }
+
   return (
     <div className="flex gap-3 overflow-x-auto px-4 pb-3 pt-1 -mb-1">
       {/* Seu story */}
       <div className="flex flex-col items-center gap-1 shrink-0 w-16">
         <button
-          onClick={() => myGroupIndex >= 0 ? setViewerGroupIndex(myGroupIndex) : fileRef.current?.click()}
+          onClick={() => myGroupIndex >= 0 ? setViewerGroupIndex(myGroupIndex) : openPicker()}
           disabled={uploading}
           className="relative w-16 h-16 rounded-full active:scale-95 transition-transform disabled:opacity-60"
         >
@@ -90,7 +96,7 @@ export default function StoriesBar({ userId }) {
           )}
           {myGroupIndex >= 0 && (
             <span
-              onClick={e => { e.stopPropagation(); fileRef.current?.click() }}
+              onClick={e => { e.stopPropagation(); openPicker() }}
               className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center ring-2 ring-background"
             >
               <Plus size={12} className="text-black" />
@@ -122,7 +128,40 @@ export default function StoriesBar({ userId }) {
         </button>
       ))}
 
-      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+      {/* Input com capture=environment: no celular abre a câmera direto */}
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
+      {/* Input normal: abre a galeria */}
+      <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+
+      {/* Escolha rápida: tirar foto ou escolher da galeria */}
+      {showPicker && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end" onClick={() => setShowPicker(false)}>
+          <div className="absolute inset-0 bg-black/60" />
+          <div className="relative bg-card rounded-t-2xl p-4 pb-8 space-y-2" onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 bg-border rounded-full mx-auto mb-2" />
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-text-main font-bold text-base">Novo story</h3>
+              <button onClick={() => setShowPicker(false)} className="text-text-muted active:scale-90">
+                <X size={20} />
+              </button>
+            </div>
+            <button
+              onClick={() => { setShowPicker(false); cameraRef.current?.click() }}
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl bg-elevated active:scale-[0.98] transition-transform"
+            >
+              <Camera size={20} className="text-primary" />
+              <span className="text-text-main font-semibold text-sm">Tirar foto</span>
+            </button>
+            <button
+              onClick={() => { setShowPicker(false); galleryRef.current?.click() }}
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl bg-elevated active:scale-[0.98] transition-transform"
+            >
+              <ImageIcon size={20} className="text-primary" />
+              <span className="text-text-main font-semibold text-sm">Escolher da galeria</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {viewerGroupIndex !== null && groups[viewerGroupIndex] && (
         <StoryViewer

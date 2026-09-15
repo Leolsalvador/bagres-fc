@@ -6,6 +6,7 @@ import {
   saveDrawToDb, fetchTeams,
   savePartida, fetchMatchHistory,
   sendPushNotification, fetchAdminProfiles,
+  postMatchStory,
 } from '@/lib/api'
 import { drawTeams } from '@/lib/teamDraw'
 import { supabase } from '@/lib/supabase'
@@ -401,6 +402,17 @@ export function RodadaProvider({ children }) {
     setMatchHistory(h => [...h, result])
     if (!rodada || !teams) return
     savePartida(rodada.id, teams, result).catch(console.error)
+
+    // Story automático com o placar e os gols/assistências — melhor esforço
+    postMatchStory({
+      autorId: profile?.id,
+      teamA: result.teamA.nome,
+      teamB: result.teamB.nome,
+      golsA: result.goalsA,
+      golsB: result.goalsB,
+      scorerNames: (result.events ?? []).filter(e => e.type === 'gol').map(e => e.player?.nome ?? 'Convidado'),
+      assisterNames: (result.events ?? []).filter(e => e.type === 'assistencia').map(e => e.player?.nome ?? 'Convidado'),
+    }).catch(err => console.error('Erro ao postar story da partida:', err))
   }
 
   return (
