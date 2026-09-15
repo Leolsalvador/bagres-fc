@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Trash2, ChevronDown, Eye, EyeOff, Trophy, Play, Users, Shuffle, X, Pencil } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, ChevronUp, Eye, EyeOff, Trophy, Play, Users, Shuffle, X, Pencil } from 'lucide-react'
 import { cn, teamDotStyle } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -282,24 +282,150 @@ export default function GestaoCampeonato() {
           <GrupoEditor campeonatoId={campeonato.id} grupo="A" times={adminTimes.filter(t => t.grupo === 'A')} onRefresh={() => loadAdminTimes(campeonato.id)} />
           <GrupoEditor campeonatoId={campeonato.id} grupo="B" times={adminTimes.filter(t => t.grupo === 'B')} onRefresh={() => loadAdminTimes(campeonato.id)} />
 
-          {/* Preview da tabela */}
-          {partidas.filter(p => p.fase === 'grupos').length > 0 && (
-            <div className="bg-card rounded-2xl overflow-hidden">
-              <div className="px-4 py-3 border-b border-border">
-                <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Tabela de jogos gerada</span>
-              </div>
-              <div className="divide-y divide-border/50">
-                {partidas.filter(p => p.fase === 'grupos').map((p, i) => (
-                  <div key={p.id} className="px-4 py-2.5 flex items-center gap-2 text-sm">
-                    <span className="text-text-muted text-xs w-4 text-center">{p.ordem}</span>
-                    <span className="flex-1 text-right text-text-main font-medium truncate">{p.time_casa?.nome}</span>
-                    <span className="text-text-muted text-xs px-1">vs</span>
-                    <span className="flex-1 text-text-main font-medium truncate">{p.time_visitante?.nome}</span>
-                  </div>
-                ))}
+          {/* Tabela de jogos — edição manual */}
+          <TabelaJogosEditor
+            campeonatoId={campeonato.id}
+            times={adminTimes}
+            partidas={partidas.filter(p => p.fase === 'grupos')}
+            onRefresh={refresh}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Editor manual da tabela de jogos (fase de grupos) ──────
+function TabelaJogosEditor({ campeonatoId, times, partidas, onRefresh }) {
+  const grupoA = times.filter(t => t.grupo === 'A')
+  const grupoB = times.filter(t => t.grupo === 'B')
+
+  const [timeCasaId, setTimeCasaId] = useState('')
+  const [timeVisitanteId, setTimeVisitanteId] = useState('')
+  const [rodada, setRodada] = useState(1)
+  const [saving, setSaving] = useState(false)
+
+  const ordenadas = [...partidas].sort((a, b) => a.ordem - b.ordem)
+  const maiorRodada = ordenadas.reduce((max, p) => Math.max(max, p.rodada_num ?? 1), 0)
+
+  async function addPartida() {
+    if (!timeCasaId || !timeVisitanteId || timeCasaId === timeVisitanteId) return
+    setSaving(true)
+    const proximaOrdem = (ordenadas.at(-1)?.ordem ?? 0) + 1
+    const { error } = await supabase.from('campeonato_partidas').insert({
+      campeonato_id: campeonatoId,
+      fase: 'grupos',
+      rodada_num: Number(rodada) || 1,
+      ordem: proximaOrdem,
+      time_casa_id: timeCasaId,
+      time_visitante_id: timeVisitanteId,
+    })
+    if (error) alert('Erro ao adicionar partida: ' + error.message)
+    setTimeCasaId(''); setTimeVisitanteId('')
+    onRefresh()
+    setSaving(false)
+  }
+
+  async function removePartida(id) {
+    if (!window.confirm('Remover esta partida da tabela?')) return
+    await supabase.from('campeonato_partidas').delete().eq('id', id)
+    onRefresh()
+  }
+
+  async function moverPartida(index, direcao) {
+    const alvo = ordenadas[index + direcao]
+    const atual = ordenadas[index]
+    if (!alvo) return
+    await Promise.all([
+      supabase.from('campeonato_partidas').update({ ordem: alvo.ordem }).eq('id', atual.id),
+      supabase.from('campeonato_partidas').update({ ordem: atual.ordem }).eq('id', alvo.id),
+    ])
+    onRefresh()
+  }
+
+  return (
+    <div className="bg-card rounded-2xl overflow-hidden">
+      <div className="px-4 py-3 border-b border-border">
+        <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Tabela de jogos</span>
+      </div>
+
+      {/* Form: adicionar partida manualmente */}
+      <div className="px-4 py-3 border-b border-border space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          <select
+            value={timeCasaId}
+            onChange={e => setTimeCasaId(e.target.value)}
+            className="bg-input text-text-main rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="">Casa (Grupo A)</option>
+            {grupoA.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
+          </select>
+          <select
+            value={timeVisitanteId}
+            onChange={e => setTimeVisitanteId(e.target.value)}
+            className="bg-input text-text-main rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="">Visitante (Grupo B)</option>
+            {grupoB.map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
+          </select>
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="number"
+            min="1"
+            value={rodada}
+            onChange={e => setRodada(e.target.value)}
+            placeholder="Rodada"
+            className="w-24 bg-input text-text-main rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+          />
+          <button
+            onClick={addPartida}
+            disabled={saving || !timeCasaId || !timeVisitanteId}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold text-black bg-primary disabled:opacity-50"
+          >
+            <Plus size={14} /> Adicionar partida
+          </button>
+        </div>
+        {maiorRodada > 0 && (
+          <p className="text-[10px] text-text-muted">Última rodada usada: {maiorRodada}</p>
+        )}
+      </div>
+
+      {/* Lista de partidas — reordenar / remover */}
+      {ordenadas.length === 0 ? (
+        <p className="text-text-muted text-xs px-4 py-3">Nenhuma partida na fase de grupos ainda.</p>
+      ) : (
+        <div className="divide-y divide-border/50">
+          {ordenadas.map((p, i) => (
+            <div key={p.id} className="px-4 py-2.5 flex items-center gap-2 text-sm">
+              <span className="text-text-muted text-[10px] w-10 shrink-0">#{p.ordem} · R{p.rodada_num}</span>
+              <span className="flex-1 text-right text-text-main font-medium truncate">{p.time_casa?.nome}</span>
+              <span className="text-text-muted text-xs px-1 shrink-0">vs</span>
+              <span className="flex-1 text-text-main font-medium truncate">{p.time_visitante?.nome}</span>
+              <div className="flex items-center gap-0.5 shrink-0">
+                <button
+                  onClick={() => moverPartida(i, -1)}
+                  disabled={i === 0}
+                  className="p-1 rounded-lg bg-elevated text-text-muted disabled:opacity-30 active:scale-95"
+                >
+                  <ChevronUp size={13} />
+                </button>
+                <button
+                  onClick={() => moverPartida(i, 1)}
+                  disabled={i === ordenadas.length - 1}
+                  className="p-1 rounded-lg bg-elevated text-text-muted disabled:opacity-30 active:scale-95"
+                >
+                  <ChevronDown size={13} />
+                </button>
+                <button
+                  onClick={() => removePartida(p.id)}
+                  className="p-1 rounded-lg bg-danger/10 text-danger active:scale-95"
+                >
+                  <Trash2 size={13} />
+                </button>
               </div>
             </div>
-          )}
+          ))}
         </div>
       )}
     </div>
