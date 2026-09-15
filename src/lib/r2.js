@@ -26,3 +26,12 @@ export async function uploadToR2(key, file) {
   }
   return `${R2_PUBLIC_URL}/${key}?t=${Date.now()}`
 }
+
+export async function deleteFromR2(key) {
+  const url = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET}/${key}`
+  const response = await r2.fetch(url, { method: 'DELETE' })
+  if (!response.ok && response.status !== 404) {
+    const text = await response.text()
+    throw new Error(`R2 delete falhou: ${response.status} ${text}`)
+  }
+}

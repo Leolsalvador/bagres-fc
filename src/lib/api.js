@@ -1,6 +1,6 @@
 // src/lib/api.js — Todas as queries do Supabase
 import { supabase } from './supabase'
-import { uploadToR2 } from './r2'
+import { uploadToR2, deleteFromR2 } from './r2'
 import { generateTeamFieldImage } from './teamFieldImage'
 import {
   USE_MOCK, mockMatchHistory,
@@ -698,4 +698,66 @@ function computeTimeDaRodada(partidas) {
     else if (p.vencedor_id === p.time_b?.id) map[nB].vitorias++
   })
   return Object.values(map).sort((a, b) => b.vitorias - a.vitorias || b.saldo - a.saldo)[0] ?? null
+}
+
+// ─── STORIES — fotos que somem em 24h ──────────────────────
+const STORY_TTL_MS = 24 * 60 * 60 * 1000
+
+export async function fetchActiveStories() {
+  if (USE_MOCK) return []
+  const cutoff = new Date(Date.now() - STORY_TTL_MS).toISOString()
+  const { data, error } = await supabase
+    .from('stories')
+    .select('id, autor_id, imagem_url, r2_key, created_at, profiles(id, nome, foto_url)')
+    .gt('created_at', cutoff)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data ?? []
+}
+
+export async function createStory(autorId, file) {
+  if (USE_MOCK) return null
+  const ext = (file.name?.split('.').pop() || 'jpg').toLowerCase()
+  const key = `stories/${autorId}/${Date.now()}.${ext}`
+  const imageUrl = await uploadToR2(key, file)
+  const { data, error } = await supabase
+    .from('stories')
+    .insert({ autor_id: autorId, imagem_url: imageUrl, r2_key: key })
+    .select('id, autor_id, imagem_url, r2_key, created_at, profiles(id, nome, foto_url)')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteStory(storyId, r2Key) {
+  if (USE_MOCK) return
+  const { error } = await supabase.from('stories').delete().eq('id', storyId)
+  if (error) throw error
+  try {
+    await deleteFromR2(r2Key)
+  } catch (err) {
+    console.error('Erro ao apagar arquivo do story no R2:', err)
+  }
+}
+
+// Apaga stories vencidos (registro + arquivo no R2) — melhor esforço,
+// chamado sempre que alguém abre a barra de stories. Sem servidor/cron:
+// quem "limpa" é o cliente de quem quer que abra o Feed depois das 24h.
+export async function cleanupExpiredStories() {
+  if (USE_MOCK) return
+  const cutoff = new Date(Date.now() - STORY_TTL_MS).toISOString()
+  const { data, error } = await supabase
+    .from('stories')
+    .select('id, r2_key')
+    .lt('created_at', cutoff)
+  if (error || !data?.length) return
+
+  await Promise.all(data.map(async s => {
+    try {
+      await deleteFromR2(s.r2_key)
+    } catch (err) {
+      console.error('Erro ao apagar story expirado do R2:', err)
+    }
+  }))
+  await supabase.from('stories').delete().in('id', data.map(s => s.id))
 }

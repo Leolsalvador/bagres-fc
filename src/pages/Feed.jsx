@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { fetchFeedPosts } from '@/lib/api'
 import FeedCard from '@/components/feed/FeedCard'
 import NovoPostModal from '@/components/feed/NovoPostModal'
+import StoriesBar from '@/components/feed/StoriesBar'
 
 const PAGE_SIZE = 5
 
@@ -84,6 +85,9 @@ export default function Feed() {
           </button>
         )}
       </div>
+
+      {/* Stories */}
+      {profile?.id && <StoriesBar userId={profile.id} />}
 
       {/* Posts */}
       <div className="flex flex-col gap-4 px-4 pb-6">
