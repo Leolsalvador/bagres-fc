@@ -207,40 +207,42 @@ export default function AdminRodada() {
       {rodada.status === 'aberta' && (
         <div className="px-4 space-y-4 pb-6">
           {/* Ações do admin */}
-          <div className="flex gap-3 flex-wrap">
-            {!presencas.some(p => p.usuario_id === profile?.id) ? (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              {!presencas.some(p => p.usuario_id === profile?.id) ? (
+                <button
+                  onClick={() => joinList(profile.id, profile)}
+                  className="flex items-center justify-center gap-1.5 bg-primary text-black font-bold py-3 rounded-xl active:scale-95 transition-transform text-xs"
+                >
+                  <LogIn size={14} className="shrink-0" /> Entrar na lista
+                </button>
+              ) : (
+                <button
+                  onClick={() => leaveList(profile.id)}
+                  className="flex items-center justify-center gap-1.5 border border-border text-text-muted py-3 rounded-xl text-xs font-semibold active:scale-95 transition-transform"
+                >
+                  <X size={14} className="shrink-0" /> Sair da lista
+                </button>
+              )}
               <button
-                onClick={() => joinList(profile.id, profile)}
-                className="flex-1 flex items-center justify-center gap-2 bg-primary text-black font-bold py-3 rounded-xl active:scale-95 transition-transform text-sm"
+                onClick={() => setGuestModal(true)}
+                className="flex items-center justify-center gap-1.5 border border-border text-text-muted py-3 rounded-xl text-xs font-semibold active:scale-95 transition-transform"
               >
-                <LogIn size={15} /> Entrar na lista
+                <UserPlus size={14} className="shrink-0" /> Convidado
               </button>
-            ) : (
               <button
-                onClick={() => leaveList(profile.id)}
-                className="flex-1 flex items-center justify-center gap-2 border border-border text-text-muted py-3 rounded-xl text-sm font-semibold active:scale-95 transition-transform"
+                onClick={() => setMontagemModal(true)}
+                className="flex items-center justify-center gap-1.5 border border-border text-text-muted py-3 rounded-xl text-xs font-semibold active:scale-95 transition-transform"
               >
-                <X size={15} /> Sair da lista
+                <LogIn size={14} className="shrink-0" /> Montar lista
               </button>
-            )}
-            <button
-              onClick={() => setGuestModal(true)}
-              className="flex-1 flex items-center justify-center gap-2 border border-border text-text-muted py-3 rounded-xl text-sm font-semibold active:scale-95 transition-transform"
-            >
-              <UserPlus size={15} /> Convidado
-            </button>
-            <button
-              onClick={() => setMontagemModal(true)}
-              className="flex-1 flex items-center justify-center gap-2 border border-border text-text-muted py-3 rounded-xl text-sm font-semibold active:scale-95 transition-transform"
-            >
-              <LogIn size={15} /> Montar lista
-            </button>
-            <button
-              onClick={() => setImportarModal(true)}
-              className="flex-1 flex items-center justify-center gap-2 border border-border text-text-muted py-3 rounded-xl text-sm font-semibold active:scale-95 transition-transform"
-            >
-              <ClipboardPaste size={15} /> Importar do WhatsApp
-            </button>
+              <button
+                onClick={() => setImportarModal(true)}
+                className="flex items-center justify-center gap-1.5 border border-border text-text-muted py-3 rounded-xl text-xs font-semibold active:scale-95 transition-transform"
+              >
+                <ClipboardPaste size={14} className="shrink-0" /> Importar lista
+              </button>
+            </div>
             <button
               onClick={closeList}
               className="w-full flex items-center justify-center gap-2 border border-danger/40 text-danger py-3 rounded-xl text-sm font-semibold active:scale-95 transition-transform"
