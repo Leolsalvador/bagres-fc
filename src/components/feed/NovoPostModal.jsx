@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react'
-import { X, ImagePlus } from 'lucide-react'
+import { X, ImagePlus, FlipHorizontal } from 'lucide-react'
 import imageCompression from 'browser-image-compression'
 import { createFeedPost, fetchApprovedProfiles, sendPushNotification } from '@/lib/api'
+import { flipImageHorizontally } from '@/lib/flipImage'
 
 export default function NovoPostModal({ autorId, onClose, onCreated }) {
   const [file, setFile] = useState(null)
@@ -9,7 +10,22 @@ export default function NovoPostModal({ autorId, onClose, onCreated }) {
   const [legenda, setLegenda] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [flipping, setFlipping] = useState(false)
   const fileRef = useRef(null)
+
+  async function handleFlip() {
+    if (!file) return
+    setFlipping(true)
+    try {
+      const flipped = await flipImageHorizontally(file)
+      setFile(flipped)
+      setPreview(URL.createObjectURL(flipped))
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setFlipping(false)
+    }
+  }
 
   function handleFile(e) {
     const f = e.target.files?.[0]
@@ -88,12 +104,21 @@ export default function NovoPostModal({ autorId, onClose, onCreated }) {
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
 
         {preview && (
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="text-primary text-xs font-medium mb-3 block"
-          >
-            Trocar foto
-          </button>
+          <div className="flex items-center gap-4 mb-3">
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="text-primary text-xs font-medium"
+            >
+              Trocar foto
+            </button>
+            <button
+              onClick={handleFlip}
+              disabled={flipping}
+              className="flex items-center gap-1 text-primary text-xs font-medium disabled:opacity-50"
+            >
+              <FlipHorizontal size={13} /> {flipping ? 'Espelhando...' : 'Espelhar (foto invertida?)'}
+            </button>
+          </div>
         )}
 
         {/* Caption */}

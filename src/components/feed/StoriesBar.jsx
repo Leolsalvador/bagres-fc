@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { Plus, Camera, Image as ImageIcon, X } from 'lucide-react'
+import { Plus, Camera, Image as ImageIcon, X, FlipHorizontal } from 'lucide-react'
 import imageCompression from 'browser-image-compression'
 import { fetchActiveStories, createStory, cleanupExpiredStories } from '@/lib/api'
+import { flipImageHorizontally } from '@/lib/flipImage'
 import StoryViewer from './StoryViewer'
 
 export default function StoriesBar({ userId }) {
@@ -9,6 +10,9 @@ export default function StoriesBar({ userId }) {
   const [uploading, setUploading] = useState(false)
   const [viewerGroupIndex, setViewerGroupIndex] = useState(null)
   const [showPicker, setShowPicker] = useState(false)
+  const [previewFile, setPreviewFile] = useState(null)
+  const [previewUrl, setPreviewUrl] = useState(null)
+  const [flipping, setFlipping] = useState(false)
   const cameraRef = useRef(null)
   const galleryRef = useRef(null)
 
@@ -46,19 +50,45 @@ export default function StoriesBar({ userId }) {
   const myGroupIndex = groups.findIndex(g => g.autor_id === userId)
   const others = groups.filter((_, i) => i !== myGroupIndex)
 
-  async function handleFile(e) {
+  function handleFile(e) {
     const f = e.target.files?.[0]
     e.target.value = ''
     if (!f) return
     if (f.size > 20 * 1024 * 1024) { alert('Imagem muito grande. Máximo 20 MB.'); return }
+    setPreviewFile(f)
+    setPreviewUrl(URL.createObjectURL(f))
+  }
+
+  async function handleFlipPreview() {
+    if (!previewFile) return
+    setFlipping(true)
+    try {
+      const flipped = await flipImageHorizontally(previewFile)
+      setPreviewFile(flipped)
+      setPreviewUrl(URL.createObjectURL(flipped))
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setFlipping(false)
+    }
+  }
+
+  function cancelPreview() {
+    setPreviewFile(null)
+    setPreviewUrl(null)
+  }
+
+  async function handlePublish() {
+    if (!previewFile) return
     setUploading(true)
     try {
-      const compressed = await imageCompression(f, {
+      const compressed = await imageCompression(previewFile, {
         maxSizeMB: 0.4,
         maxWidthOrHeight: 1280,
         useWebWorker: true,
       })
       await createStory(userId, compressed)
+      cancelPreview()
       await load()
     } catch (err) {
       console.error(err)
@@ -171,6 +201,37 @@ export default function StoriesBar({ userId }) {
           onClose={() => setViewerGroupIndex(null)}
           onDeleted={load}
         />
+      )}
+
+      {/* Pré-visualização antes de publicar — permite espelhar se a foto veio invertida */}
+      {previewUrl && (
+        <div className="fixed inset-0 z-[60] bg-black flex flex-col">
+          <div className="flex items-center justify-between px-4 py-3" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)' }}>
+            <h3 className="text-white font-bold text-base">Novo story</h3>
+            <button onClick={cancelPreview} className="text-white/80 active:scale-90 transition-transform">
+              <X size={22} />
+            </button>
+          </div>
+          <div className="flex-1 flex items-center justify-center overflow-hidden px-4">
+            <img src={previewUrl} alt="preview" className="max-w-full max-h-full object-contain rounded-lg" />
+          </div>
+          <div className="px-4 pb-8 pt-3 space-y-2">
+            <button
+              onClick={handleFlipPreview}
+              disabled={flipping || uploading}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-white/10 text-white text-sm font-semibold active:scale-95 transition-transform disabled:opacity-50"
+            >
+              <FlipHorizontal size={16} /> {flipping ? 'Espelhando...' : 'Espelhar (foto invertida?)'}
+            </button>
+            <button
+              onClick={handlePublish}
+              disabled={uploading || flipping}
+              className="w-full py-3.5 rounded-xl bg-primary text-black font-bold active:scale-95 transition-transform disabled:opacity-50"
+            >
+              {uploading ? 'Publicando...' : 'Publicar story'}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )
