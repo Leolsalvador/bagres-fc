@@ -135,9 +135,9 @@ export default function StoriesBar({ userId }) {
 
       {/* Escolha rápida: tirar foto ou escolher da galeria */}
       {showPicker && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end" onClick={() => setShowPicker(false)}>
+        <div className="fixed inset-0 z-[60] flex flex-col justify-end" onClick={() => setShowPicker(false)}>
           <div className="absolute inset-0 bg-black/60" />
-          <div className="relative bg-card rounded-t-2xl p-4 pb-8 space-y-2" onClick={e => e.stopPropagation()}>
+          <div className="relative bg-card rounded-t-2xl p-4 pb-8 mb-16 space-y-2" onClick={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-border rounded-full mx-auto mb-2" />
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-text-main font-bold text-base">Novo story</h3>
