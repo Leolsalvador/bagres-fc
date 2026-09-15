@@ -161,8 +161,8 @@ export async function insertPresenca(rodadaId, usuarioId, posicao, status) {
   return data
 }
 
-export async function insertGuestPresenca(rodadaId, { nome, posicao_campo, rating }, posicao, convidadoPor, inviterNome) {
-  const status = posicao <= 20 ? 'confirmado' : 'espera'
+export async function insertGuestPresenca(rodadaId, { nome, posicao_campo, rating }, posicao, convidadoPor, inviterNome, statusOverride) {
+  const status = statusOverride ?? (posicao <= 20 ? 'confirmado' : 'espera')
   const { data, error } = await supabase
     .from('presencas')
     .insert({

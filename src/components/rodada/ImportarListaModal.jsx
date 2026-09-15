@@ -17,6 +17,8 @@ export default function ImportarListaModal({ rodadaId, presencas, onClear, onImp
   const [profiles, setProfiles] = useState([])
   const [rows, setRows] = useState([])
   const [saving, setSaving] = useState(false)
+  const [progress, setProgress] = useState(null) // { done, total }
+  const [failures, setFailures] = useState([]) // [{ rawName, message }]
 
   useEffect(() => {
     fetchApprovedProfiles().then(setProfiles).catch(console.error)
@@ -62,35 +64,46 @@ export default function ImportarListaModal({ rodadaId, presencas, onClear, onImp
 
   async function handleConfirm() {
     setSaving(true)
+    setFailures([])
+
+    const toImport = rows.filter(r => r.include && (
+      (r.mode === 'profile' && r.profileId) || (r.mode === 'guest' && r.inviterId && r.guestNome.trim())
+    ))
+    setProgress({ done: 0, total: toImport.length })
+
     try {
       if (presencas.length > 0) await onClear()
 
-      const inserts = rows
-        .filter(r => r.include)
-        .map(r => {
-          const posicao = r.isGoleiro ? 100 + (r.pos - 1) : r.pos
-          const status = r.isGoleiro ? 'confirmado' : (posicao <= 20 ? 'confirmado' : 'espera')
+      // Insere uma por vez (não em paralelo) — disparar tudo de uma vez sobrecarrega
+      // a API e faz alguma inserção falhar por limite de conexões simultâneas.
+      const failed = []
+      for (const r of toImport) {
+        const posicao = r.isGoleiro ? 100 + (r.pos - 1) : r.pos
+        const status = r.isGoleiro || posicao <= 20 ? 'confirmado' : 'espera'
+        try {
           if (r.mode === 'profile' && r.profileId) {
-            return insertPresenca(rodadaId, r.profileId, posicao, status)
-          }
-          if (r.mode === 'guest' && r.inviterId && r.guestNome.trim()) {
+            await insertPresenca(rodadaId, r.profileId, posicao, status)
+          } else {
             const inviter = profiles.find(p => p.id === r.inviterId)
-            return insertGuestPresenca(
+            await insertGuestPresenca(
               rodadaId,
               { nome: r.guestNome.trim(), posicao_campo: 'MEI', rating: 3 },
-              posicao, r.inviterId, inviter?.nome
+              posicao, r.inviterId, inviter?.nome, status
             )
           }
-          return null
-        })
-        .filter(Boolean)
+        } catch (err) {
+          console.error(`Erro ao importar "${r.rawName}":`, err)
+          failed.push({ rawName: r.rawName, message: err.message ?? String(err) })
+        }
+        setProgress(p => ({ ...p, done: p.done + 1 }))
+      }
 
-      await Promise.all(inserts)
+      setFailures(failed)
       await onImported()
-      onClose()
+      if (failed.length === 0) onClose()
     } catch (err) {
       console.error('Erro ao importar lista:', err)
-      alert('Erro ao importar a lista. Veja o console pra detalhes.')
+      setFailures([{ rawName: null, message: err.message ?? String(err) }])
     } finally {
       setSaving(false)
     }
@@ -147,6 +160,18 @@ export default function ImportarListaModal({ rodadaId, presencas, onClear, onImp
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+            {failures.length > 0 && (
+              <div className="rounded-xl border border-danger/40 bg-danger/5 p-3 space-y-1">
+                <p className="text-danger text-xs font-bold flex items-center gap-1.5">
+                  <AlertTriangle size={13} /> {failures.length} não entraram — tente de novo ou adicione manualmente:
+                </p>
+                {failures.map((f, i) => (
+                  <p key={i} className="text-danger text-xs">
+                    {f.rawName ? `• ${f.rawName}: ` : ''}{f.message}
+                  </p>
+                ))}
+              </div>
+            )}
             {rows.map(row => (
               <RowEditor key={row.key} row={row} profiles={profiles} onChange={c => updateRow(row.key, c)} />
             ))}
@@ -155,7 +180,8 @@ export default function ImportarListaModal({ rodadaId, presencas, onClear, onImp
           <div className="px-4 py-3 border-t border-border shrink-0 flex gap-2">
             <button
               onClick={() => setStep('paste')}
-              className="flex-1 py-3 rounded-xl text-sm font-semibold text-text-muted bg-elevated"
+              disabled={saving}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold text-text-muted bg-elevated disabled:opacity-40"
             >
               Voltar
             </button>
@@ -164,7 +190,7 @@ export default function ImportarListaModal({ rodadaId, presencas, onClear, onImp
               disabled={saving || readyCount === 0}
               className="flex-[2] py-3 rounded-xl text-sm font-bold text-black bg-primary disabled:opacity-40 active:scale-95 transition-transform"
             >
-              {saving ? 'Importando...' : `Confirmar e importar (${readyCount})`}
+              {saving ? `Importando... ${progress?.done ?? 0}/${progress?.total ?? 0}` : `Confirmar e importar (${readyCount})`}
             </button>
           </div>
         </div>
